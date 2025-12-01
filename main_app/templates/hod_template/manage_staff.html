@@ -1,0 +1,79 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{page_title}}</h3>
+                        <button type="button" class="btn btn-primary float-right" data-toggle="modal"
+                            data-target="#addStaffModal">
+                            Add Staff
+                        </button>
+                    </div>
+                    <!-- /.card-header -->
+                    <div class="card-body">
+                        <table id="example2" class="table table-bordered table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Gender</th>
+                                    <th>Course</th>
+                                    <th>Avatar</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for staff in allStaff %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{staff.last_name}}, {{staff.first_name}}</td>
+                                    <td>{{staff.email}}</td>
+                                    <td>{{staff.gender}}</td>
+                                    <td>{{staff.staff.course.name}}</td>
+                                    <td>
+                                        <img class="img img-fluid mb-2" height="56" width="56"
+                                            src="{{staff.avatar_url}}" alt="Staff Avatar">
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'edit_staff' staff.staff.id %}" class="btn btn-info">Edit</a> -
+                                        <a href="{% url 'delete_staff' staff.staff.id %}" class="btn btn-danger"
+                                            onclick="return confirm('Are you sure about this ?')">Delete</a>
+
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Add Staff Modal -->
+<div class="modal fade" id="addStaffModal" tabindex="-1" role="dialog" aria-labelledby="addStaffModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addStaffModalLabel">Add Staff</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                {% include 'main_app/form_template.html' with form=form messages=messages %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

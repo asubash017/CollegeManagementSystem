@@ -1,0 +1,169 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block custom_css %}
+<style>
+    .id-card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .id-card {
+        border-radius: 12px;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        padding: 1.2rem;
+        min-height: 360px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .id-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #f1f3f5;
+        padding-bottom: 0.6rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .id-card-header img {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+    }
+
+    .id-card-body {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 90px 1fr;
+        gap: 1rem;
+    }
+
+    .id-card-photo img {
+        width: 90px;
+        height: 110px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #ced4da;
+    }
+
+    .id-card-footer {
+        border-top: 1px solid #f1f3f5;
+        padding-top: 0.6rem;
+        margin-top: 0.8rem;
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+
+    .print-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    @media print {
+        body {
+            background: #fff;
+        }
+
+        .main-header,
+        .main-sidebar,
+        .print-actions,
+        .content-header,
+        footer {
+            display: none !important;
+        }
+
+        .content-wrapper {
+            margin-left: 0 !important;
+        }
+
+        .id-card-grid {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1rem;
+        }
+
+        .id-card {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            border-color: #adb5bd;
+        }
+    }
+</style>
+{% endblock custom_css %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-primary mb-3">
+            <div class="card-body d-flex justify-content-between align-items-center flex-wrap">
+                <div class="mb-2">
+                    <h5 class="mb-1 text-primary">{{ meta.role }} | {{ meta.mode }} generation</h5>
+                    <p class="mb-0 text-muted">
+                        {{ meta.filter_summary }} &middot;
+                        Total Cards: {{ meta.total }} &middot;
+                        Generated: {{ meta.generated_on }}
+                    </p>
+                </div>
+                <div class="print-actions mb-2">
+                    <a href="{% url 'id_card_generator' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left mr-1"></i>Back to generator
+                    </a>
+                    <button type="button" onclick="window.print()" class="btn btn-primary btn-sm">
+                        <i class="fas fa-print mr-1"></i>Print / Save as PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="id-card-grid">
+            {% for card in cards %}
+            <div class="id-card shadow-sm">
+                <div class="id-card-header">
+                    <div>
+                        <h5 class="mb-0 text-uppercase">{{ card.institution }}</h5>
+                        <small class="text-muted">{{ card.role }}</small>
+                    </div>
+                    <img src="{% static 'dist/img/cmsl.png' %}" alt="Institution logo">
+                </div>
+                <div class="id-card-body">
+                    <div class="id-card-photo">
+                        <img src="{{ card.profile_pic }}" alt="{{ card.full_name }}">
+                    </div>
+                    <div>
+                        <h4 class="mb-1">{{ card.full_name }}</h4>
+                        <p class="mb-1"><strong>ID:</strong> {{ card.id_code }}</p>
+                        {% if card.extra_meta %}
+                        <p class="mb-1"><strong>{{ card.extra_meta }}</strong></p>
+                        {% endif %}
+                        <p class="mb-1"><strong>Email:</strong> {{ card.email }}</p>
+                        {% if card.course %}
+                        <p class="mb-1"><strong>Course:</strong> {{ card.course }}</p>
+                        {% endif %}
+                        {% if card.session %}
+                        <p class="mb-1"><strong>Session:</strong> {{ card.session }}</p>
+                        {% endif %}
+                        <p class="mb-1"><strong>Gender:</strong> {{ card.gender }}</p>
+                        {% if card.address %}
+                        <p class="mb-0"><strong>Address:</strong> {{ card.address }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="id-card-footer">
+                    <span>Issued on {{ card.issued_on }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-center text-muted mb-0">No cards available.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+

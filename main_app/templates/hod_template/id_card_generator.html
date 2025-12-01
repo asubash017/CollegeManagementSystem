@@ -1,0 +1,172 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title }}{% endblock page_title %}
+
+{% block content %}
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card card-primary card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">Individual ID Card</h3>
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="generation_type" value="individual">
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="individual-role">Select Role</label>
+                                <select name="role" id="individual-role" class="form-control" required>
+                                    <option value="">-- Choose role --</option>
+                                    {% for code,label in role_labels.items %}
+                                    <option value="{{ code }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="individual-user">Select User</label>
+                                <select name="user_id" id="individual-user" class="form-control" required>
+                                    <option value="">-- Choose a user --</option>
+                                    {% for admin in admin_users %}
+                                    <option value="{{ admin.id }}" data-role="1">
+                                        HOD - {{ admin.get_full_name }} ({{ admin.email }})
+                                    </option>
+                                    {% endfor %}
+                                    {% for staff in staff_profiles %}
+                                    <option value="{{ staff.admin.id }}" data-role="2">
+                                        Staff - {{ staff.admin.get_full_name }}{% if staff.course %}
+                                        ({{ staff.course.name }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                    {% for student in student_profiles %}
+                                    <option value="{{ student.admin.id }}" data-role="3">
+                                        Student - {{ student.admin.get_full_name }}{% if student.course %}
+                                        ({{ student.course.name }}){% endif %}{% if student.session %}
+                                        - {{ student.session.start_year|date:"Y" }}/{{ student.session.end_year|date:"Y" }}{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Only users that match the selected role will be available.</small>
+                            </div>
+                        </div>
+                        <div class="card-footer text-right">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-id-card mr-1"></i>Generate ID Card
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card card-success card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">Bulk / Role-wise ID Cards</h3>
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="generation_type" value="bulk">
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="bulk-role">Select Role</label>
+                                <select name="role" id="bulk-role" class="form-control" required>
+                                    <option value="">-- Choose role --</option>
+                                    {% for code,label in role_labels.items %}
+                                    <option value="{{ code }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group d-none" data-filter="course">
+                                <label for="bulk-course">Course Filter (optional)</label>
+                                <select name="course_id" id="bulk-course" class="form-control">
+                                    <option value="">All Courses</option>
+                                    {% for course in courses %}
+                                    <option value="{{ course.id }}">{{ course.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group d-none" data-filter="session">
+                                <label for="bulk-session">Session Filter (students only)</label>
+                                <select name="session_id" id="bulk-session" class="form-control">
+                                    <option value="">All Sessions</option>
+                                    {% for session in sessions %}
+                                    <option value="{{ session.id }}">{{ session.start_year|date:"Y" }} - {{ session.end_year|date:"Y" }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <p class="text-muted mb-0">
+                                Leave filters empty to generate cards for the entire role.
+                            </p>
+                        </div>
+                        <div class="card-footer text-right">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-layer-group mr-1"></i>Generate Bulk Cards
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    (function () {
+        const roleSelector = document.getElementById('individual-role');
+        const userSelect = document.getElementById('individual-user');
+        const userOptions = Array.from(userSelect.options);
+
+        function filterUsersByRole(role) {
+            let firstVisible = null;
+            userOptions.forEach(option => {
+                if (!option.dataset.role) {
+                    option.hidden = false;
+                    return;
+                }
+                const matches = !role || option.dataset.role === role;
+                option.hidden = !matches;
+                if (matches && !firstVisible) {
+                    firstVisible = option.value;
+                }
+            });
+            if (role && firstVisible) {
+                userSelect.value = firstVisible;
+            } else {
+                userSelect.value = '';
+            }
+        }
+
+        roleSelector.addEventListener('change', function () {
+            filterUsersByRole(this.value);
+        });
+
+        const bulkRole = document.getElementById('bulk-role');
+        const courseFilter = document.querySelector('[data-filter="course"]');
+        const sessionFilter = document.querySelector('[data-filter="session"]');
+
+        function toggleBulkFilters(role) {
+            const isStaff = role === '2';
+            const isStudent = role === '3';
+
+            courseFilter.classList.toggle('d-none', !(isStaff || isStudent));
+            sessionFilter.classList.toggle('d-none', !isStudent);
+
+            if (!(isStaff || isStudent)) {
+                courseFilter.querySelector('select').value = '';
+            }
+            if (!isStudent) {
+                sessionFilter.querySelector('select').value = '';
+            }
+        }
+
+        bulkRole.addEventListener('change', function () {
+            toggleBulkFilters(this.value);
+        });
+    })();
+</script>
+{% endblock custom_js %}
+
+

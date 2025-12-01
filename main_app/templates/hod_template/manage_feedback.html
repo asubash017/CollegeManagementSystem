@@ -1,0 +1,182 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary card-tabs">
+                    <div class="card-header p-0 pt-1">
+                        <ul class="nav nav-tabs" id="custom-tabs-one-tab" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="custom-tabs-one-student-tab" data-toggle="pill"
+                                    href="#custom-tabs-one-student" role="tab" aria-controls="custom-tabs-one-student"
+                                    aria-selected="true">Student Feedback</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-one-staff-tab" data-toggle="pill"
+                                    href="#custom-tabs-one-staff" role="tab" aria-controls="custom-tabs-one-staff"
+                                    aria-selected="false">Staff Feedback</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="custom-tabs-one-tabContent">
+                            <div class="tab-pane fade show active" id="custom-tabs-one-student" role="tabpanel"
+                                aria-labelledby="custom-tabs-one-student-tab">
+                                <div class="table-responsive">
+                                    <table class="table table-hover text-nowrap table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Student</th>
+                                                <th>Session</th>
+                                                <th>Message</th>
+                                                <th>Sent On</th>
+                                                <th>Reply</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for feedback in student_feedbacks %}
+                                            <tr>
+                                                <td>{{feedback.id}}</td>
+                                                <td>{{feedback.student.admin.first_name}}
+                                                    {{feedback.student.admin.last_name}}</td>
+                                                <td>{{feedback.student.session.start_year}} -
+                                                    {{feedback.student.session.end_year}}</td>
+                                                <td>{{feedback.feedback}}</td>
+                                                <td>{{feedback.created_at}}</td>
+                                                <td>
+                                                    {% if feedback.reply == "" %}
+                                                    <button class="btn btn-success reply_open_modal" data-toggle="modal"
+                                                        data-target="#reply_modal" data-id="{{feedback.id}}"
+                                                        data-type="student">Reply</button>
+                                                    {% else %}
+                                                    {{feedback.reply}}
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="custom-tabs-one-staff" role="tabpanel"
+                                aria-labelledby="custom-tabs-one-staff-tab">
+                                <div class="table-responsive">
+                                    <table class="table table-hover text-nowrap table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Staff</th>
+                                                <th>Course</th>
+                                                <th>Message</th>
+                                                <th>Sent On</th>
+                                                <th>Reply</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for feedback in staff_feedbacks %}
+                                            <tr>
+                                                <td>{{feedback.id}}</td>
+                                                <td>{{feedback.staff.admin.first_name}}
+                                                    {{feedback.staff.admin.last_name}}</td>
+                                                <td>{{feedback.staff.course.name}}</td>
+                                                <td>{{feedback.feedback}}</td>
+                                                <td>{{feedback.created_at}}</td>
+                                                <td>
+                                                    {% if feedback.reply == "" %}
+                                                    <button class="btn btn-success reply_open_modal" data-toggle="modal"
+                                                        data-target="#reply_modal" data-id="{{feedback.id}}"
+                                                        data-type="staff">Reply</button>
+                                                    {% else %}
+                                                    {{feedback.reply}}
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.card -->
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modal -->
+<div class="modal fade" id="reply_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Reply Feedback</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Reply to: <span id="reply_name"></span></p>
+                <input type="hidden" id="reply_id" name="reply_id">
+                <input type="hidden" id="reply_type" name="reply_type">
+                <textarea class="form-control" rows="5" id="reply_message"></textarea>
+                <button id="reply_btn" class="btn btn-info btn-block">Reply</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function () {
+        $(".reply_open_modal").click(function () {
+            var id = $(this).data("id");
+            var type = $(this).data("type");
+            var name = $(this).parents("tr").children("td:eq(1)").text();
+            $("#reply_id").val(id);
+            $("#reply_type").val(type);
+            $("#reply_name").text(name);
+        });
+
+        $(document).on("click", "#reply_btn", function () {
+            $(this).attr("disabled", "disabled");
+            $(this).text("Sending Reply...");
+
+            var id = $("#reply_id").val();
+            var reply = $("#reply_message").val();
+            var type = $("#reply_type").val();
+
+            $.ajax({
+                url: "{% url 'manage_feedback' %}",
+                type: 'POST',
+                data: {
+                    id: id,
+                    reply: reply,
+                    type: type
+                }
+            }).done(function (response) {
+                if (response == "True") {
+                    alert("Reply Sent");
+                    location.reload();
+                } else {
+                    alert("Error in Sending Reply");
+                }
+            }).fail(function () {
+                alert("Error in Sending Reply");
+            });
+        });
+    });
+</script>
+{% endblock custom_js %}

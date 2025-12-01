@@ -1,0 +1,98 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <!-- general form elements -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">{{page_title}}</h3>
+                    </div>
+
+                    <!-- /.card-header -->
+                    <!-- form start -->
+                    <form role="form" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="card-body">
+
+                            <ul class="nav nav-tabs" id="settingTabs" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="general-tab" data-toggle="pill" href="#general"
+                                        role="tab" aria-controls="general" aria-selected="true">General Settings</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="email-tab" data-toggle="pill" href="#email" role="tab"
+                                        aria-controls="email" aria-selected="false">Email & SMS</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="chat-tab" data-toggle="pill" href="#chat" role="tab"
+                                        aria-controls="chat" aria-selected="false">Chat Support</a>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content" id="settingTabsContent" style="padding-top: 20px;">
+                                <!-- General Settings -->
+                                <div class="tab-pane fade show active" id="general" role="tabpanel"
+                                    aria-labelledby="general-tab">
+                                    <div class="form-group">
+                                        <label>{{ form.system_name.label }}</label>
+                                        {{ form.system_name }}
+                                        <span class="text-danger">{{ form.system_name.errors }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Email & SMS Settings -->
+                                <div class="tab-pane fade" id="email" role="tabpanel" aria-labelledby="email-tab">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>{{ form.email_host.label }}</label>
+                                                {{ form.email_host }}
+                                                <span class="text-danger">{{ form.email_host.errors }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>{{ form.email_port.label }}</label>
+                                                {{ form.email_port }}
+                                                <span class="text-danger">{{ form.email_port.errors }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>{{ form.email_host_user.label }}</label>
+                                                {{ form.email_host_user }}
+                                                <span class="text-danger">{{ form.email_host_user.errors }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>{{ form.email_host_password.label }}</label>
+                                                {{ form.email_host_password }}
+                                                <span class="text-danger">{{ form.email_host_password.errors }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>{{ form.sms_api_key.label }}</label>
+                                        {{ form.sms_api_key }}
+                                        <div class="card-footer">
+                                            <button type="submit" class="btn btn-primary btn-block">Save
+                                                Settings</button>
+                                        </div>
+                    </form>
+                </div>
+                <!-- /.card -->
+
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}

@@ -1,0 +1,5 @@
+first_name,last_name,email,gender,address,course,session,password,profile_pic
+Grace,Hopper,grace.student@example.com,F,"12 Innovation Way, Lagos","Computer Science","2023-2024","Student@123",""
+Linus,Torvalds,linus.student@example.com,M,"5 Kernel Close, Abuja","Mathematics","2022-2023","",""
+
+

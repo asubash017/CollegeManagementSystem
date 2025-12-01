@@ -1,0 +1,396 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>{{ page_title|default:"College Management System" }}</title>
+  <!-- Tell the browser to be responsive to screen width -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="{% static 'plugins/fontawesome-free/css/all.min.css'%} ">
+  <!-- Ionicons -->
+  <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+  <!-- Tempusdominus Bbootstrap 4 -->
+  <link rel="stylesheet" href="{% static 'plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css'%} ">
+  <!-- iCheck -->
+  <link rel="stylesheet" href="{% static 'plugins/icheck-bootstrap/icheck-bootstrap.min.css'%} ">
+  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAA7AAAAOwBeShxvQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAGKSURBVFiF7ZdBTsJAFIa/mQKJGzYu3AE3sBMvwRE8gkfgCHgEj+ARvAQ7cAcu3JiwsCSQdvwXQqFTSqfTmZL4J03TzLz35p/3Zy4zFhGhRi3UqIUatVCjFmrUQo1aqFELNWqhRi3UqIUatVCjFmrUQo1aqFELNf4yEBGJiEilgIi0M+3LSkQkYr/T7D71/U6zj4gk2X1qqwAR6fmep77fafZ9z9N2JiKDkgJEZOB7nnZz+dz3PB14nqdt2/d7LwWYL6YDwMzl89y+t20fFBYgIr1QPgAMfM/TVkEBlgCJcvnc971tCwqwBEiUy+dZAiwBEuXyeZYAS4BEuXyeJcASIFEun2cJsARIlMvnWQIsARLl8nmWAEuARLl8niXAEiBRLp9nCbAESJTL51kCLAES5fJ5lgBLgES5fJ4lwBIgUS6fZwmwBEiUy+dZAiwBEuXyeZYAS4BEuXyeJcASIFEun2cJsARIlMvnWQIsARLl8vmWAEmUy+dZAiRRLp9nCZBEuXze/1j4ApUK7RiRaHHDAAAAAElFTkSuQmCC">
+  <!-- Theme style -->
+  <link rel="stylesheet" href="{% static 'dist/css/adminlte.min.css'%} ">
+  <!-- overlayScrollbars -->
+  <link rel="stylesheet" href="{% static 'plugins/overlayScrollbars/css/OverlayScrollbars.min.css'%} ">
+  <!-- Daterange picker -->
+  <link rel="stylesheet" href="{% static 'plugins/daterangepicker/daterangepicker.css'%} ">
+
+  <!-- Google Font: Source Sans Pro -->
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+  {% block custom_css %}
+
+  {% endblock custom_css %}
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+  <div class="wrapper">
+
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+      <!-- Left navbar links -->
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+        </li>
+
+      </ul>
+
+
+    </nav>
+    <!-- /.navbar -->
+
+    <!-- Main Sidebar Container -->
+
+
+    {% include "main_app/sidebar_template.html" with user=user %}
+
+
+    <div class="content-wrapper">
+
+      <!-- Content Wrapper. Contains page content -->
+      <!-- Content Header (Page header) -->
+      <div class="content-header">
+        <div class="container-fluid">
+          <div class="row mb-2">
+            <div class="col-sm-6">
+              <h1 class="m-0 text-dark">{% block page_title %}{% endblock page_title %}</h1>
+            </div><!-- /.col -->
+            <div class="col-sm-6">
+
+              <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="#">Home</a></li>
+                <li class="breadcrumb-item active">{{ page_title }}</li>
+              </ol>
+            </div><!-- /.col -->
+          </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+      </div>
+      <!-- /.content-header -->
+
+      <!-- Main content -->
+
+      <section class="content">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="form-group">
+                {% if messages %}
+                {% for message in messages %}
+
+                {% if message.tags == 'success' %}
+                <div class="alert alert-success">
+                  {{message}}
+                </div>
+                {% else %}
+                <div class="alert alert-danger">
+                  {{message}}
+                </div>
+                {% endif %}
+
+                {% endfor %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      {% block content %}
+
+      {% endblock content %}
+      <!-- /.content -->
+    </div>
+    <!-- /.content-wrapper -->
+    {% include "main_app/footer.html" %}
+
+
+  </div>
+  <!-- ./wrapper -->
+  <!-- jQuery -->
+  <script src="{% static 'plugins/jquery/jquery.min.js'%} "></script>
+  <!-- jQuery UI 1.11.4 -->
+  <script src="{% static 'plugins/jquery-ui/jquery-ui.min.js'%} "></script>
+  <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
+  <script>
+    $.widget.bridge('uibutton', $.ui.button)
+  </script>
+  <!-- Bootstrap 4 -->
+  <script src="{% static 'plugins/bootstrap/js/bootstrap.bundle.min.js'%} "></script>
+  <!-- ChartJS -->
+  <script src="{% static 'plugins/chart.js/Chart.min.js'%} "></script>
+  <!-- Sparkline -->
+  <script src="{% static 'plugins/sparklines/sparkline.js'%} "></script>
+
+  <!-- jQuery Knob Chart -->
+  <script src="{% static 'plugins/jquery-knob/jquery.knob.min.js'%} "></script>
+  <!-- daterangepicker -->
+  <script src="{% static 'plugins/moment/moment.min.js'%} "></script>
+  <script src="{% static 'plugins/daterangepicker/daterangepicker.js'%} "></script>
+  <!-- Tempusdominus Bootstrap 4 -->
+  <script src="{% static 'plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js'%} "></script>
+
+  <!-- overlayScrollbars -->
+  <script src="{% static 'plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js'%} "></script>
+  <!-- AdminLTE App -->
+  <script src="{% static 'dist/js/adminlte.js'%} "></script>
+  <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
+  <script src="{% static 'dist/js/pages/dashboard.js'%} "></script>
+  <!-- AdminLTE for demo purposes -->
+  <script src="{% static 'dist/js/demo.js'%} "></script>
+  {% block custom_js %}
+
+  {% endblock custom_js %}
+  <!-- Chat Widget -->
+  <style>
+    #chat-widget-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      background-color: #007bff;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 9999;
+      font-size: 24px;
+    }
+
+    #chat-widget-window {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 350px;
+      height: 450px;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      display: none;
+      flex-direction: column;
+      z-index: 9999;
+      overflow: hidden;
+    }
+
+    #chat-header {
+      background-color: #007bff;
+      color: white;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #chat-messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      background-color: #f8f9fa;
+    }
+
+    #chat-input-area {
+      padding: 10px;
+      border-top: 1px solid #dee2e6;
+      display: flex;
+    }
+
+    #chat-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      margin-right: 5px;
+    }
+
+    #chat-send-btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .message {
+      margin-bottom: 10px;
+      max-width: 80%;
+      padding: 8px 12px;
+      border-radius: 15px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .user-message {
+      background-color: #007bff;
+      color: white;
+      align-self: flex-end;
+      margin-left: auto;
+      border-bottom-right-radius: 0;
+    }
+
+    .bot-message {
+      background-color: #e9ecef;
+      color: #333;
+      align-self: flex-start;
+      border-bottom-left-radius: 0;
+    }
+
+    .chat-loader {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border: 2px solid #333;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 1s linear infinite;
+    }
+
+    .preset-chip {
+      display: inline-block;
+      background-color: #e2e6ea;
+      color: #333;
+      padding: 5px 10px;
+      border-radius: 15px;
+      margin: 2px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid #ced4da;
+    }
+
+    .preset-chip:hover {
+      background-color: #dbe2e8;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+
+  <div id="chat-widget-btn" onclick="toggleChat()">
+    <i class="fas fa-comments"></i>
+  </div>
+
+  <div id="chat-widget-window">
+    <div id="chat-header">
+      <span>{{ system_settings.chat_bot_name|default:"AI Support" }}</span>
+      <span style="cursor:pointer" onclick="toggleChat()">&times;</span>
+    </div>
+    <div id="chat-messages">
+      <div class="message bot-message">Hello! How can I help you today?</div>
+      <div id="preset-container" style="padding: 5px 10px;"></div>
+    </div>
+    <div id="chat-input-area">
+      <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+      <button id="chat-send-btn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    let presetsLoaded = false;
+
+    function toggleChat() {
+      const chatWindow = document.getElementById('chat-widget-window');
+      if (chatWindow.style.display === 'none' || chatWindow.style.display === '') {
+        chatWindow.style.display = 'flex';
+        if (!presetsLoaded) {
+          loadPresets();
+          presetsLoaded = true;
+        }
+      } else {
+        chatWindow.style.display = 'none';
+      }
+    }
+
+    function loadPresets() {
+      fetch('/chat_api/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'get_presets' })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.presets && data.presets.length > 0) {
+            const container = document.getElementById('preset-container');
+            container.innerHTML = ''; // Clear existing
+            data.presets.forEach(question => {
+              const chip = document.createElement('span');
+              chip.className = 'preset-chip';
+              chip.innerText = question;
+              chip.onclick = () => {
+                document.getElementById('chat-input').value = question;
+                sendMessage();
+              };
+              container.appendChild(chip);
+            });
+          }
+        })
+        .catch(err => console.error("Failed to load presets", err));
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const message = input.value.trim();
+      if (!message) return;
+
+      addMessage(message, 'user');
+      input.value = '';
+
+      // Show loading
+      const messagesDiv = document.getElementById('chat-messages');
+      const loaderDiv = document.createElement('div');
+      loaderDiv.className = 'message bot-message';
+      loaderDiv.innerHTML = '<div class="chat-loader"></div>';
+      loaderDiv.id = 'chat-loader';
+      messagesDiv.appendChild(loaderDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+      fetch('/chat_api/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: message })
+      })
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('chat-loader').remove();
+          addMessage(data.message, 'bot');
+        })
+        .catch(error => {
+          document.getElementById('chat-loader').remove();
+          addMessage('Sorry, something went wrong.', 'bot');
+          console.error('Error:', error);
+        });
+    }
+
+    function addMessage(text, sender) {
+      const messagesDiv = document.getElementById('chat-messages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${sender}-message`;
+      messageDiv.innerHTML = text;
+      messagesDiv.appendChild(messageDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+  </script>
+</body>
+
+</html>

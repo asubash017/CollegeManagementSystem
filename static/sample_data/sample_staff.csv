@@ -1,0 +1,5 @@
+first_name,last_name,email,gender,address,course,password,profile_pic
+Ada,Lovelace,ada.staff@example.com,F,"42 Infinite Loop, Lagos","Computer Science","Staff@123",""
+Alan,Turing,alan.turing@example.com,M,"10 Logic Lane, Abuja","Mathematics",""
+
+

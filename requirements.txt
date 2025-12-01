@@ -1,0 +1,11 @@
+Django>=5.1
+mysql-connector-python
+virtualenv
+dj-database-url
+gunicorn
+psycopg2-binary
+whitenoise
+Pillow
+Faker
+requests
+google-generativeai

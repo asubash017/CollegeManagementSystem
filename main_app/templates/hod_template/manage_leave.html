@@ -1,0 +1,193 @@
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{page_title}}{% endblock page_title %}
+
+{% block content %}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-primary card-tabs">
+                    <div class="card-header p-0 pt-1">
+                        <ul class="nav nav-tabs" id="custom-tabs-one-tab" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="custom-tabs-one-student-tab" data-toggle="pill"
+                                    href="#custom-tabs-one-student" role="tab" aria-controls="custom-tabs-one-student"
+                                    aria-selected="true">Student Leave</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-one-staff-tab" data-toggle="pill"
+                                    href="#custom-tabs-one-staff" role="tab" aria-controls="custom-tabs-one-staff"
+                                    aria-selected="false">Staff Leave</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="custom-tabs-one-tabContent">
+                            <div class="tab-pane fade show active" id="custom-tabs-one-student" role="tabpanel"
+                                aria-labelledby="custom-tabs-one-student-tab">
+                                <div class="table-responsive">
+                                    <table class="table table-hover text-nowrap table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Student</th>
+                                                <th>Session</th>
+                                                <th>Date</th>
+                                                <th>Message</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for leave in student_leave %}
+                                            <tr>
+                                                <td>{{leave.id}}</td>
+                                                <td>{{leave.student.admin.first_name}} {{leave.student.admin.last_name}}
+                                                </td>
+                                                <td>{{leave.student.session.start_year}} -
+                                                    {{leave.student.session.end_year}}</td>
+                                                <td>{{leave.date}}{% if leave.end_date and leave.end_date != leave.date %} – {{ leave.end_date }}{% endif %}</td>
+                                                <td>{{leave.message}}</td>
+                                                <td>
+                                                    {% if leave.status == 0 %}
+                                                    <button data-toggle="modal" data-target="#reply_modal"
+                                                        data-id="{{leave.id}}" data-type="student"
+                                                        class="btn btn-success reply_open_modal">Reply</button>
+                                                    {% elif leave.status == 1 %}
+                                                    <span class='badge badge-success'>Approved</span>
+                                                    {% else %}
+                                                    <span class='badge badge-danger'>Rejected</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="custom-tabs-one-staff" role="tabpanel"
+                                aria-labelledby="custom-tabs-one-staff-tab">
+                                <div class="table-responsive">
+                                    <table class="table table-hover text-nowrap table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Staff</th>
+                                                <th>Course</th>
+                                                <th>Date</th>
+                                                <th>Message</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for leave in staff_leave %}
+                                            <tr>
+                                                <td>{{leave.id}}</td>
+                                                <td>{{leave.staff.admin.first_name}} {{leave.staff.admin.last_name}}
+                                                </td>
+                                                <td>{{leave.staff.course.name}}</td>
+                                                <td>{{leave.date}}{% if leave.end_date and leave.end_date != leave.date %} – {{ leave.end_date }}{% endif %}</td>
+                                                <td>{{leave.message}}</td>
+                                                <td>
+                                                    {% if leave.status == 0 %}
+                                                    <button data-toggle="modal" data-target="#reply_modal"
+                                                        data-id="{{leave.id}}" data-type="staff"
+                                                        class="btn btn-success reply_open_modal">Reply</button>
+                                                    {% elif leave.status == 1 %}
+                                                    <span class='badge badge-success'>Approved</span>
+                                                    {% else %}
+                                                    <span class='badge badge-danger'>Rejected</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.card -->
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modal -->
+<div class="modal fade" id="reply_modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Leave Action</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Take action for <span id="reply_name"></span>'s leave request</p>
+                <input type="hidden" id="reply_id" name="reply_id">
+                <input type="hidden" id="reply_type" name="reply_type">
+                <button id="approve_btn" class="btn btn-success btn-block">Approve</button>
+                <button id="reject_btn" class="btn btn-danger btn-block">Reject</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block custom_js %}
+<script>
+    $(document).ready(function () {
+        $(".reply_open_modal").click(function () {
+            var id = $(this).data("id");
+            var type = $(this).data("type");
+            var name = $(this).parents("tr").children("td:eq(1)").text();
+            $("#reply_id").val(id);
+            $("#reply_type").val(type);
+            $("#reply_name").text(name);
+        });
+
+        $(document).on("click", "#approve_btn", function () {
+            $(this).attr("disabled", "disabled");
+            $(this).text("Approving...");
+            send_request(1);
+        });
+
+        $(document).on("click", "#reject_btn", function () {
+            $(this).attr("disabled", "disabled");
+            $(this).text("Rejecting...");
+            send_request(-1);
+        });
+
+        function send_request(status) {
+            var id = $("#reply_id").val();
+            var type = $("#reply_type").val();
+            $.ajax({
+                url: "{% url 'manage_leave' %}",
+                type: 'POST',
+                data: {
+                    id: id,
+                    status: status,
+                    type: type
+                }
+            }).done(function (response) {
+                if (response == "True") {
+                    alert("Leave Updated");
+                    location.reload();
+                } else {
+                    alert("Error in Updating Leave");
+                }
+            }).fail(function () {
+                alert("Error in Updating Leave");
+            });
+        }
+    });
+</script>
+{% endblock custom_js %}

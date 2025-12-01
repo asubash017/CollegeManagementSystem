@@ -1,0 +1,266 @@
+{% extends 'main_app/base.html' %} {% load static %} {% block page_title %}{{ page_title|default:"Send Notifications" }}{% endblock page_title %} {% block content %}
+<section class="content">
+  <div class="container-fluid">
+    <div class="card card-outline card-primary">
+      <div class="card-header p-2 border-bottom-0">
+        <ul class="nav nav-pills" id="notify-tabs" role="tablist">
+          <li class="nav-item">
+            <a
+              class="nav-link active"
+              id="students-tab"
+              data-toggle="tab"
+              href="#students-pane"
+              role="tab"
+              aria-controls="students-pane"
+              aria-selected="true"
+            >
+              <i class="fas fa-user-graduate mr-1"></i> Students
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link"
+              id="staff-tab"
+              data-toggle="tab"
+              href="#staff-pane"
+              role="tab"
+              aria-controls="staff-pane"
+              aria-selected="false"
+            >
+              <i class="fas fa-chalkboard-teacher mr-1"></i> Staff
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="card-body">
+        <div class="tab-content" id="notify-tabContent">
+          <div
+            class="tab-pane fade show active"
+            id="students-pane"
+            role="tabpanel"
+            aria-labelledby="students-tab"
+          >
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover">
+                <thead class="thead-dark">
+                  <tr>
+                    <th>#</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Gender</th>
+                    <th>Course</th>
+                    <th>Session</th>
+                    <th>Avatar</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for student in students %}
+                  <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{student.last_name}}, {{student.first_name}}</td>
+                    <td>{{student.email}}</td>
+                    <td>{{student.get_gender_display}}</td>
+                    <td>{{student.student.course.name}}</td>
+                    <td>
+                      {% if student.student and student.student.session %} 
+                        {{ student.student.session.start_year|date:"Y" }} - {{ student.student.session.end_year|date:"Y" }} 
+                      {% else %} 
+                        — 
+                      {% endif %}
+                    </td>
+                    <td>
+                      <img
+                        class="img img-fluid mb-2"
+                        height="48"
+                        width="48"
+                        src="{{student.avatar_url}}"
+                        alt="Student Avatar"
+                      />
+                    </td>
+                    <td>
+                      <button
+                        class="btn btn-primary trigger-notification"
+                        data-user-id="{{student.id}}"
+                        data-request-url="{% url 'send_student_notification' %}"
+                      >
+                        Send Notification
+                      </button>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="8" class="text-center text-muted">
+                      No students found.
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div
+            class="tab-pane fade"
+            id="staff-pane"
+            role="tabpanel"
+            aria-labelledby="staff-tab"
+          >
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover">
+                <thead class="thead-dark">
+                  <tr>
+                    <th>#</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Gender</th>
+                    <th>Course</th>
+                    <th>Avatar</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for staff in allStaff %}
+                  <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{staff.last_name}}, {{staff.first_name}}</td>
+                    <td>{{staff.email}}</td>
+                    <td>{{staff.get_gender_display}}</td>
+                    <td>{{staff.staff.course.name}}</td>
+                    <td>
+                      <img
+                        class="img img-fluid mb-2"
+                        height="48"
+                        width="48"
+                        src="{{staff.avatar_url}}"
+                        alt="Staff Avatar"
+                      />
+                    </td>
+                    <td>
+                      <button
+                        class="btn btn-primary trigger-notification"
+                        data-user-id="{{staff.id}}"
+                        data-request-url="{% url 'send_staff_notification' %}"
+                      >
+                        Send Notification
+                      </button>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">
+                      No staff found.
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div
+  class="modal fade"
+  id="notificationModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="notificationModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="notificationModalLabel">
+          Send Notification
+        </h5>
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="notification-message">Message</label>
+          <textarea
+            id="notification-message"
+            class="form-control"
+            rows="3"
+            placeholder="Type your message here"
+          ></textarea>
+          <input type="hidden" id="notification-user-id" />
+          <input type="hidden" id="notification-endpoint" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          Close
+        </button>
+        <button
+          type="button"
+          class="btn btn-success"
+          id="send-notification-btn"
+        >
+          Send Notification
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %} {% block custom_js %}
+<script>
+  (function () {
+    const modal = $("#notificationModal");
+    const messageField = $("#notification-message");
+    const userIdField = $("#notification-user-id");
+    const endpointField = $("#notification-endpoint");
+
+    $(".trigger-notification").on("click", function () {
+      const userId = $(this).data("userId");
+      const url = $(this).data("requestUrl");
+      userIdField.val(userId);
+      endpointField.val(url);
+      messageField.val("");
+      modal.modal("show");
+    });
+
+    $("#send-notification-btn").on("click", function () {
+      const userId = userIdField.val();
+      const message = messageField.val().trim();
+      const url = endpointField.val();
+
+      if (!message) {
+        alert("Please enter a message before sending.");
+        return;
+      }
+
+      $.ajax({
+        url: url,
+        type: "POST",
+        data: {
+          id: userId,
+          message: message,
+        },
+      })
+        .done(function (response) {
+          if (response === "True" || response === true) {
+            alert("Notification sent successfully.");
+            modal.modal("hide");
+          } else {
+            alert("Notification could not be sent. Please try again.");
+          }
+        })
+        .fail(function () {
+          alert("An error occurred while sending the notification.");
+        });
+    });
+  })();
+</script>
+{% endblock custom_js %}
+
