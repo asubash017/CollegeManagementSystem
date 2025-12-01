@@ -14,6 +14,12 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import UpdateView
 
+
+import qrcode
+from io import BytesIO
+import base64
+
+
 from .forms import *
 from .models import *
 
@@ -246,8 +252,44 @@ def admin_home(request):
     return render(request, 'hod_template/home_content.html', context)
 
 
+
+def _build_id_card_payload(user):
+    """
+    Build payload for ID card including QR code
+    """
+    payload = {
+        'full_name': f"{user.first_name} {user.last_name}",
+        'id_code': user.id,
+        'email': user.email,
+        'gender': user.gender,
+        'address': user.address,
+        'profile_pic': user.avatar_url,
+        'course': getattr(user.student, 'course.name', '') if hasattr(user, 'student') else getattr(user.staff, 'course.name', ''),
+        'session': f"{user.student.session.start_year}-{user.student.session.end_year}" if hasattr(user, 'student') and user.student.session else '',
+        'institution': "College Management System",
+        'issued_on': timezone.now().strftime("%d %b %Y"),
+    }
+
+    # QR code with user details
+    qr_data = {
+        "Name": payload['full_name'],
+        "ID": payload['id_code'],
+        "Email": payload['email'],
+        "Role": ROLE_LABELS.get(str(user.user_type), "User"),
+        "Course": payload['course'],
+        "Session": payload['session']
+    }
+    payload['qr_code'] = generate_qr_code(qr_data)
+
+    return payload
+
+
 def id_card_generator(request):
-    # Only staff and students now
+    """
+    Generate individual or bulk ID cards
+    Excludes HOD/Admin roles
+    """
+    # Only staff and students
     staff_profiles = Staff.objects.select_related('admin', 'course').order_by('admin__first_name', 'admin__last_name')
     student_profiles = Student.objects.select_related('admin', 'course', 'session').order_by('admin__first_name', 'admin__last_name')
     courses = Course.objects.all().order_by('name')
@@ -259,7 +301,7 @@ def id_card_generator(request):
         course_id = request.POST.get('course_id') or None
         session_id = request.POST.get('session_id') or None
 
-        # Exclude HOD/Admin role
+        # Exclude HOD/Admin
         if role not in ROLE_LABELS or role == str(ADMIN_ROLE):
             messages.error(request, "HOD/Admin ID cards cannot be generated.")
             return redirect(reverse('id_card_generator'))
@@ -280,6 +322,7 @@ def id_card_generator(request):
 
         cards = [_build_id_card_payload(user) for user in selected_users]
 
+        # Prepare summary of applied filters
         filter_summary = []
         if generation_type == 'bulk':
             if course_id:
@@ -304,6 +347,7 @@ def id_card_generator(request):
         }
         return render(request, 'hod_template/id_card_preview.html', preview_context)
 
+    # GET request: display generator page
     context = {
         'page_title': 'ID Card Generator',
         'role_labels': {k: v for k, v in ROLE_LABELS.items() if k != ADMIN_ROLE},  # Exclude HOD/Admin
@@ -313,6 +357,25 @@ def id_card_generator(request):
         'sessions': sessions,
     }
     return render(request, 'hod_template/id_card_generator.html', context)
+
+def generate_qr_code(data_dict):
+    """
+    Generate a QR code as base64 string from a dictionary
+    """
+    qr = qrcode.QRCode(
+        version=1,
+        box_size=4,
+        border=2
+    )
+    qr.add_data(data_dict)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    buffered = BytesIO()
+    img.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+    return f"data:image/png;base64,{img_str}"
 
 
 

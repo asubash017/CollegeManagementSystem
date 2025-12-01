@@ -6,7 +6,7 @@
 <style>
     .id-card-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         gap: 1.5rem;
     }
 
@@ -14,19 +14,28 @@
         border-radius: 12px;
         background: #fff;
         border: 1px solid #dee2e6;
-        padding: 1.2rem;
-        min-height: 360px;
+        padding: 1rem;
+        min-height: 380px;
         display: flex;
         flex-direction: column;
+        font-family: Arial, sans-serif;
+        position: relative;
     }
 
     .id-card-header {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        border-bottom: 1px solid #f1f3f5;
-        padding-bottom: 0.6rem;
-        margin-bottom: 0.8rem;
+        align-items: center;
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.7rem;
+    }
+
+    .id-card-header h5 {
+        font-size: 0.95rem;
+        margin: 0;
+        line-height: 1.2;
+        text-transform: uppercase;
     }
 
     .id-card-header img {
@@ -36,26 +45,60 @@
     }
 
     .id-card-body {
-        flex: 1;
-        display: grid;
-        grid-template-columns: 90px 1fr;
+        display: flex;
         gap: 1rem;
+        flex: 1;
+    }
+
+    .id-card-photo {
+        width: 90px;
+        height: 110px;
+        flex-shrink: 0;
     }
 
     .id-card-photo img {
-        width: 90px;
-        height: 110px;
+        width: 100%;
+        height: 100%;
         object-fit: cover;
-        border-radius: 8px;
+        border-radius: 6px;
         border: 2px solid #ced4da;
     }
 
-    .id-card-footer {
-        border-top: 1px solid #f1f3f5;
-        padding-top: 0.6rem;
-        margin-top: 0.8rem;
+    .id-card-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .id-card-info h4 {
+        font-size: 1rem;
+        margin: 0;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .id-card-info p {
         font-size: 0.85rem;
-        color: #6c757d;
+        margin: 2px 0;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .id-card-qr {
+        position: absolute;
+        bottom: 1rem;
+        right: 1rem;
+        width: 70px;
+        height: 70px;
+    }
+
+    .id-card-footer {
+        border-top: 1px solid #e9ecef;
+        font-size: 0.8rem;
+        color: #495057;
+        padding-top: 0.4rem;
+        margin-top: 0.5rem;
     }
 
     .print-actions {
@@ -65,32 +108,11 @@
     }
 
     @media print {
-        body {
-            background: #fff;
-        }
-
-        .main-header,
-        .main-sidebar,
-        .print-actions,
-        .content-header,
-        footer {
-            display: none !important;
-        }
-
-        .content-wrapper {
-            margin-left: 0 !important;
-        }
-
-        .id-card-grid {
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 1rem;
-        }
-
-        .id-card {
-            page-break-inside: avoid;
-            break-inside: avoid;
-            border-color: #adb5bd;
-        }
+        body { background: #fff; }
+        .main-header, .main-sidebar, .print-actions, .content-header, footer { display: none !important; }
+        .content-wrapper { margin-left: 0 !important; }
+        .id-card-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+        .id-card { page-break-inside: avoid; break-inside: avoid; border-color: #adb5bd; }
     }
 </style>
 {% endblock custom_css %}
@@ -124,36 +146,40 @@
             <div class="id-card shadow-sm">
                 <div class="id-card-header">
                     <div>
-                        <h5 class="mb-0 text-uppercase">{{ card.institution }}</h5>
+                        <h5>{{ card.institution }}</h5>
                         <small class="text-muted">{{ card.role }}</small>
                     </div>
-                    <img src="{% static 'dist/img/cmsl.png' %}" alt="Institution logo">
+                    <img src="{% static 'dist/img/cmsl.png' %}" alt="Institution Logo">
                 </div>
+
                 <div class="id-card-body">
                     <div class="id-card-photo">
                         <img src="{{ card.profile_pic }}" alt="{{ card.full_name }}">
                     </div>
-                    <div>
-                        <h4 class="mb-1">{{ card.full_name }}</h4>
-                        <p class="mb-1"><strong>ID:</strong> {{ card.id_code }}</p>
-                        {% if card.extra_meta %}
-                        <p class="mb-1"><strong>{{ card.extra_meta }}</strong></p>
-                        {% endif %}
-                        <p class="mb-1"><strong>Email:</strong> {{ card.email }}</p>
-                        {% if card.course %}
-                        <p class="mb-1"><strong>Course:</strong> {{ card.course }}</p>
-                        {% endif %}
-                        {% if card.session %}
-                        <p class="mb-1"><strong>Session:</strong> {{ card.session }}</p>
-                        {% endif %}
-                        <p class="mb-1"><strong>Gender:</strong> {{ card.gender }}</p>
-                        {% if card.address %}
-                        <p class="mb-0"><strong>Address:</strong> {{ card.address }}</p>
-                        {% endif %}
+
+                    <div class="id-card-info">
+                        <div>
+                            <h4>{{ card.full_name }}</h4>
+                            {% if card.role == "Student" %}
+                                <p><strong>Reg No:</strong> {{ card.id_code }}</p>
+                                <p><strong>Course:</strong> {{ card.course }}</p>
+                                <p><strong>Session:</strong> {{ card.session }}</p>
+                            {% else %}
+                                <p><strong>Staff ID:</strong> {{ card.id_code }}</p>
+                            {% endif %}
+                            <p><strong>Email:</strong> {{ card.email }}</p>
+                            <p><strong>Gender:</strong> {{ card.gender }}</p>
+                            {% if card.address %}
+                                <p><strong>Address:</strong> {{ card.address }}</p>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
+
+                <img src="{{ card.qr_code }}" class="id-card-qr" alt="QR Code">
+
                 <div class="id-card-footer">
-                    <span>Issued on {{ card.issued_on }}</span>
+                    Issued on {{ card.issued_on }}
                 </div>
             </div>
             {% empty %}
@@ -165,5 +191,3 @@
     </div>
 </section>
 {% endblock content %}
-
-

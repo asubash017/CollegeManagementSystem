@@ -6,7 +6,6 @@
 <section class="content">
     <div class="container-fluid">
         <div class="row">
-            <!-- Individual ID Card -->
             <div class="col-md-6">
                 <div class="card card-primary card-outline">
                     <div class="card-header">
@@ -21,9 +20,7 @@
                                 <select name="role" id="individual-role" class="form-control" required>
                                     <option value="">-- Choose role --</option>
                                     {% for code,label in role_labels.items %}
-                                        {% if code != "1" %} {# Exclude HOD/Admin #}
-                                            <option value="{{ code }}">{{ label }}</option>
-                                        {% endif %}
+                                    <option value="{{ code }}">{{ label }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -31,6 +28,11 @@
                                 <label for="individual-user">Select User</label>
                                 <select name="user_id" id="individual-user" class="form-control" required>
                                     <option value="">-- Choose a user --</option>
+                                    {% for admin in admin_users %}
+                                    <option value="{{ admin.id }}" data-role="1">
+                                        HOD - {{ admin.get_full_name }} ({{ admin.email }})
+                                    </option>
+                                    {% endfor %}
                                     {% for staff in staff_profiles %}
                                     <option value="{{ staff.admin.id }}" data-role="2">
                                         Staff - {{ staff.admin.get_full_name }}{% if staff.course %}
@@ -57,7 +59,6 @@
                 </div>
             </div>
 
-            <!-- Bulk ID Cards -->
             <div class="col-md-6">
                 <div class="card card-success card-outline">
                     <div class="card-header">
@@ -72,9 +73,7 @@
                                 <select name="role" id="bulk-role" class="form-control" required>
                                     <option value="">-- Choose role --</option>
                                     {% for code,label in role_labels.items %}
-                                        {% if code != "1" %} {# Exclude HOD/Admin #}
-                                            <option value="{{ code }}">{{ label }}</option>
-                                        {% endif %}
+                                    <option value="{{ code }}">{{ label }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -133,7 +132,11 @@
                     firstVisible = option.value;
                 }
             });
-            userSelect.value = firstVisible || '';
+            if (role && firstVisible) {
+                userSelect.value = firstVisible;
+            } else {
+                userSelect.value = '';
+            }
         }
 
         roleSelector.addEventListener('change', function () {
@@ -151,8 +154,12 @@
             courseFilter.classList.toggle('d-none', !(isStaff || isStudent));
             sessionFilter.classList.toggle('d-none', !isStudent);
 
-            if (!(isStaff || isStudent)) courseFilter.querySelector('select').value = '';
-            if (!isStudent) sessionFilter.querySelector('select').value = '';
+            if (!(isStaff || isStudent)) {
+                courseFilter.querySelector('select').value = '';
+            }
+            if (!isStudent) {
+                sessionFilter.querySelector('select').value = '';
+            }
         }
 
         bulkRole.addEventListener('change', function () {
@@ -161,3 +168,5 @@
     })();
 </script>
 {% endblock custom_js %}
+
+
