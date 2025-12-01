@@ -63,7 +63,7 @@ def get_students(request):
         for student in students:
             data = {
                     "id": student.id,
-                    "name": student.admin.last_name + " " + student.admin.first_name
+                    "name": f"{student.admin.last_name} {student.admin.first_name}, {student.registration_number}"
                     }
             student_data.append(data)
         return JsonResponse(json.dumps(student_data), content_type='application/json', safe=False)
@@ -276,38 +276,63 @@ def staff_view_notification(request):
 def staff_add_result(request):
     staff = get_object_or_404(Staff, admin=request.user)
     subjects = Subject.objects.filter(staff=staff)
-    sessions = Session.objects.all()
+    sessions   = Session.objects.all()
+
+    # ----  NEW : send students to template  ----
+    students = Student.objects.filter(
+        course__in=subjects.values_list('course', flat=True)
+    ).select_related('admin').order_by('admin__first_name', 'admin__last_name')
+
     context = {
         'page_title': 'Result Upload',
-        'subjects': subjects,
-        'sessions': sessions
+        'subjects'  : subjects,
+        'sessions'  : sessions,
+        'students'  : students,          # <-- added
     }
+
     if request.method == 'POST':
         try:
             student_id = request.POST.get('student_list')
             subject_id = request.POST.get('subject')
-            test = request.POST.get('test')
-            exam = request.POST.get('exam')
+            test_raw   = request.POST.get('test')
+            exam_raw   = request.POST.get('exam')
+
+            # ----  NEW : 0-100 & numeric guard  ----
+            def _clean_mark(val):
+                try:
+                    v = float(val)
+                    if 0 <= v <= 100:
+                        return v
+                except (ValueError, TypeError):
+                    pass
+                return None
+
+            test = _clean_mark(test_raw)
+            exam = _clean_mark(exam_raw)
+            if test is None or exam is None:
+                messages.warning(request, "Test & Exam must be numbers between 0 and 100.")
+                return render(request, "staff_template/staff_add_result.html", context)
+            # ----------------------------------------
+
             student = get_object_or_404(Student, id=student_id)
             subject = get_object_or_404(Subject, id=subject_id)
-            try:
-                data = StudentResult.objects.get(
-                    student=student, subject=subject)
-                data.exam = exam
-                data.test = test
-                data.save()
-                messages.success(request, "Scores Updated")
-            except:
-                result = StudentResult(student=student, subject=subject, test=test, exam=exam)
-                result.save()
-                messages.success(request, "Scores Saved")
+
+            result, created = StudentResult.objects.update_or_create(
+                student=student, subject=subject,
+                defaults={'test': test, 'exam': exam}
+            )
+            msg = "Scores Saved" if created else "Scores Updated"
+            messages.success(request, msg)
+
         except Exception as e:
             messages.warning(request, "Error Occured While Processing Form")
+
     return render(request, "staff_template/staff_add_result.html", context)
 
 
 @csrf_exempt
 def fetch_student_result(request):
+    """UNCHANGED – keep your original code exactly as it was"""
     try:
         subject_id = request.POST.get('subject')
         student_id = request.POST.get('student')
