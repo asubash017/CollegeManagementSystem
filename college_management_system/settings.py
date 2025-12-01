@@ -157,7 +157,7 @@ TIME_ZONE = 'Africa/Lagos'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
+TIME_ZONE = 'Asia/Kathmandu'
 
 EMAIL_HOST_USER = os.environ.get('EMAIL_ADDRESS') 
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD')

@@ -63,49 +63,61 @@
 </section>
 {% endblock content %}
 
-
 {% block custom_js %}
 <script>
     $(document).ready(function () {
 
-       
         $("#fetch_student").click(function () {
-            var subject = $("#subject").val()
-            var session = $("#session").val()
-            $("#student_data").html(null)
-if (subject.length  == 0 || session.length == 0){
-    alert("Please select session and subject");
-    return false;
-}
+            var subject = $("#subject").val();
+            var session = $("#session").val();
+            $("#student_data").html(null);
+            if (subject.length === 0 || session.length === 0) {
+                alert("Please select session and subject");
+                return false;
+            }
+
             $.ajax({
                 url: "{% url 'get_students' %}",
                 type: 'POST',
-                data: {
-                    subject: subject,
-                    session: session
-                }
+                data: {subject: subject, session: session}
             }).done(function (response) {
-                var json_data = JSON.parse(response)
+                var json_data = JSON.parse(response);
                 if (json_data.length < 1) {
-                    alert("No data to display")
+                    alert("No data to display");
                 } else {
-                    var div_data = "<hr/><div class='form-group'> <label> Student List</label> <select class='student_list form-control' name='student_list'> "
+                    var div_data =
+                        "<hr/>" +
+                        "<div class='form-group'>" +
+                        "<label>Student List</label>" +
+                        "<select class='student_list form-control' name='student_list'>";
 
-                    for (key in json_data) {
-                        div_data += "<option value='" + json_data[key]['id'] + "'>" + json_data[key]['name'] + " </option>"
+                    for (var key in json_data) {
+                        div_data += "<option value='" + json_data[key]['id'] + "'>" + json_data[key]['name'] + "</option>";
                     }
-                    div_data += "</select></div>"
-                    div_data += "<div class='form-group row'> <div class='col-md-6'> <label> Test Score </label> <input class='form-control' name='test' placeholder='Test Score' max='40' min='0' required type='number' /></div><div class='col-md-6'><label> Exam Score </label>  <input class='form-control' placeholder='Exam Score'  name='exam' max='60' min='0' required type='number' /> </div></div><div class='form-group'><button id='save_attendance' class='btn btn-success' type='submit'>Save Result</button></div></div>"
-                    $("#student_data").html(div_data)
+                    div_data += "</select></div>";
+
+                    // ---- NEW : inputs clamped 0-100, no letters ----
+                    div_data +=
+                        "<div class='form-group row'>" +
+                        "<div class='col-md-6'>" +
+                        "<label>Test Score</label>" +
+                        "<input class='form-control' name='test' placeholder='Test Score' min='0' max='100' step='0.01' required type='number' oninput='if(this.value>100)this.value=100;'/>" +
+                        "</div>" +
+                        "<div class='col-md-6'>" +
+                        "<label>Exam Score</label>" +
+                        "<input class='form-control' placeholder='Exam Score' name='exam' min='0' max='100' step='0.01' required type='number' oninput='if(this.value>100)this.value=100;'/>" +
+                        "</div>" +
+                        "</div>" +
+                        "<div class='form-group'>" +
+                        "<button id='save_attendance' class='btn btn-success' type='submit'>Save Result</button>" +
+                        "</div>";
+
+                    $("#student_data").html(div_data);
                 }
-            }).fail(function (response) {
-                alert("Error in fetching students")
-            })
-
-
-
-
-        })
-    })
+            }).fail(function () {
+                alert("Error in fetching students");
+            });
+        });
+    });
 </script>
 {% endblock custom_js %}
