@@ -43,8 +43,8 @@
                                             {% for feedback in student_feedbacks %}
                                             <tr>
                                                 <td>{{feedback.id}}</td>
-                                                <td>{{feedback.student.admin.first_name}}
-                                                    {{feedback.student.admin.last_name}}</td>
+                                                <td>{{feedback.student.admin.last_name}}
+                                                    {{feedback.student.admin.first_name}}</td>
                                                 <td>{{feedback.student.session.start_year}} -
                                                     {{feedback.student.session.end_year}}</td>
                                                 <td>{{feedback.feedback}}</td>

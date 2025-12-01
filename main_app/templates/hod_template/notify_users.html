@@ -58,7 +58,7 @@
                   {% for student in students %}
                   <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{student.last_name}}, {{student.first_name}}</td>
+                    <td>{{student.first_name}} {{student.last_name}}, {{ student.student.registration_number }}</td>
                     <td>{{student.email}}</td>
                     <td>{{student.get_gender_display}}</td>
                     <td>{{student.student.course.name}}</td>
@@ -122,7 +122,7 @@
                   {% for staff in allStaff %}
                   <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{staff.last_name}}, {{staff.first_name}}</td>
+                    <td>{{staff.first_name}} {{staff.last_name}}, {{ staff.staff.staff_id_number }}</td>
                     <td>{{staff.email}}</td>
                     <td>{{staff.get_gender_display}}</td>
                     <td>{{staff.staff.course.name}}</td>
