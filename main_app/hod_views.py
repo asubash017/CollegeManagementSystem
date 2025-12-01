@@ -247,7 +247,7 @@ def admin_home(request):
 
 
 def id_card_generator(request):
-    admin_users = CustomUser.objects.filter(user_type=ADMIN_ROLE).order_by('first_name', 'last_name')
+    # Only staff and students now
     staff_profiles = Staff.objects.select_related('admin', 'course').order_by('admin__first_name', 'admin__last_name')
     student_profiles = Student.objects.select_related('admin', 'course', 'session').order_by('admin__first_name', 'admin__last_name')
     courses = Course.objects.all().order_by('name')
@@ -258,8 +258,10 @@ def id_card_generator(request):
         role = request.POST.get('role')
         course_id = request.POST.get('course_id') or None
         session_id = request.POST.get('session_id') or None
-        if role not in ROLE_LABELS:
-            messages.error(request, "Please pick a valid role before generating ID cards.")
+
+        # Exclude HOD/Admin role
+        if role not in ROLE_LABELS or role == str(ADMIN_ROLE):
+            messages.error(request, "HOD/Admin ID cards cannot be generated.")
             return redirect(reverse('id_card_generator'))
 
         if generation_type == 'individual':
@@ -304,14 +306,14 @@ def id_card_generator(request):
 
     context = {
         'page_title': 'ID Card Generator',
-        'role_labels': ROLE_LABELS,
-        'admin_users': admin_users,
+        'role_labels': {k: v for k, v in ROLE_LABELS.items() if k != ADMIN_ROLE},  # Exclude HOD/Admin
         'staff_profiles': staff_profiles,
         'student_profiles': student_profiles,
         'courses': courses,
         'sessions': sessions,
     }
     return render(request, 'hod_template/id_card_generator.html', context)
+
 
 
 def data_tools(request):
@@ -322,7 +324,12 @@ def data_tools(request):
         'sessions': Session.objects.all().order_by('-start_year'),
         'required_headers': [
             'first_name', 'last_name', 'email', 'gender', 'address',
-            'course (staff & students)', 'session (students only)', 'password (optional)'
+            'phone',  # New field
+            'course (staff & students)',
+            'session (students only)',
+            'registration_number (students only)',
+            'staff_id_number (staff only)',
+            'password (optional)'
         ]
     }
     return render(request, 'hod_template/data_tools.html', context)
@@ -347,13 +354,25 @@ def export_users_csv(request):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
     writer = csv.writer(response)
+    # Headers with new fields
     writer.writerow([
         'Role', 'First Name', 'Last Name', 'Email', 'Gender', 'Address',
-        'Course', 'Session', 'Extra Info', 'ID Code'
+        'Phone', 'Course', 'Session', 'Registration Number', 'Staff ID', 'Extra Info', 'ID Code'
     ])
 
     for user in queryset:
         payload = _build_id_card_payload(user)
+        phone = ''
+        reg_no = ''
+        staff_no = ''
+
+        if user.user_type == STUDENT_ROLE:
+            phone = getattr(user.student, 'phone', '')
+            reg_no = getattr(user.student, 'registration_number', '')
+        elif user.user_type == STAFF_ROLE:
+            phone = getattr(user.staff, 'phone', '')
+            staff_no = getattr(user.staff, 'staff_id_number', '')
+
         writer.writerow([
             payload['role'],
             user.first_name,
@@ -361,8 +380,11 @@ def export_users_csv(request):
             user.email,
             payload['gender'],
             payload['address'],
+            phone,
             payload['course'] or '',
             payload['session'] or '',
+            reg_no,
+            staff_no,
             payload['extra_meta'] or '',
             payload['id_code']
         ])
@@ -396,12 +418,16 @@ def import_users_csv(request):
         reader.fieldnames = [_canonicalize_header(name) for name in reader.fieldnames]
     header_set = set(reader.fieldnames or [])
     if not header_set or not CSV_REQUIRED_FIELDS.issubset(header_set):
-        messages.error(request, "CSV header must include first_name,last_name,email,gender,address (plus course/session/password/profile_pic where needed).")
+        messages.error(
+            request,
+            "CSV header must include first_name,last_name,email,gender,address (plus course/session/password/profile_pic where needed)."
+        )
         return redirect(reverse('data_tools'))
 
     created = 0
     skipped = 0
     errors = []
+
     for line_number, row in enumerate(reader, start=2):
         if not row or not any(row.values()):
             continue
@@ -412,10 +438,13 @@ def import_users_csv(request):
             last_name = (row.get('last_name') or '').strip()
             gender = _normalize_gender(row.get('gender'))
             address = (row.get('address') or '').strip()
+            phone = (row.get('phone') or '').strip()
             course_value = (row.get('course') or '').strip()
             session_value = (row.get('session') or '').strip()
             password = (row.get('password') or '').strip()
             profile_path = (row.get('profile_pic') or '').strip()
+            registration_number = (row.get('registration_number') or '').strip()
+            staff_id_number = (row.get('staff_id_number') or '').strip()
 
             if not email or not first_name or not last_name or not gender or not address:
                 raise ValueError("Missing one of the required fields (first_name,last_name,email,gender,address).")
@@ -433,7 +462,14 @@ def import_users_csv(request):
             if role == STUDENT_ROLE:
                 session = _resolve_session(session_value)
                 if not session:
-                    raise ValueError("Session column is required for students and must match an existing session (e.g. 2022-2023).")
+                    raise ValueError(
+                        "Session column is required for students and must match an existing session (e.g. 2022-2023)."
+                    )
+                if not registration_number:
+                    raise ValueError("Registration number is required for students.")
+
+            if role == STAFF_ROLE and not staff_id_number:
+                raise ValueError("Staff ID number is required for staff.")
 
             if not password:
                 password = CustomUser.objects.make_random_password()
@@ -452,10 +488,16 @@ def import_users_csv(request):
             user.address = address
             user.save()
 
-            if role == STAFF_ROLE and course:
-                user.staff.course = course
+            if role == STAFF_ROLE:
+                user.staff.phone = phone
+                user.staff.staff_id_number = staff_id_number
+                if course:
+                    user.staff.course = course
                 user.staff.save()
+
             elif role == STUDENT_ROLE:
+                user.student.phone = phone
+                user.student.registration_number = registration_number
                 if course:
                     user.student.course = course
                 if session:
@@ -463,6 +505,7 @@ def import_users_csv(request):
                 user.student.save()
 
             created += 1
+
         except Exception as exc:
             errors.append(f"Line {line_number}: {exc}")
 
@@ -473,7 +516,9 @@ def import_users_csv(request):
     if errors:
         preview_errors = errors[:5]
         messages.error(request, "Some rows failed to import:\n" + "\n".join(preview_errors))
+
     return redirect(reverse('data_tools'))
+
 
 
 def add_staff(request):

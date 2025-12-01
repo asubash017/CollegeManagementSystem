@@ -1,12 +1,15 @@
-{% extends 'main_app/base.html' %} {% load static %} {% block page_title %}{{ page_title|default:"CSV Import/Export" }}{% endblock page_title %} {% block content %}
+{% extends 'main_app/base.html' %}
+{% load static %}
+{% block page_title %}{{ page_title|default:"CSV Import/Export" }}{% endblock page_title %}
+
+{% block content %}
 <section class="content">
   <div class="container-fluid">
     <div class="row">
+      <!-- Export CSV -->
       <div class="col-lg-6">
         <div class="card card-info card-outline">
-          <div
-            class="card-header d-flex justify-content-between align-items-center"
-          >
+          <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title mb-0">Export Users to CSV</h3>
             <small class="text-muted">Role-aware with optional filters</small>
           </div>
@@ -14,25 +17,18 @@
             <div class="card-body">
               <div class="form-group">
                 <label for="export-role">Select Role</label>
-                <select
-                  class="form-control"
-                  id="export-role"
-                  name="role"
-                  required
-                >
+                <select class="form-control" id="export-role" name="role" required>
                   <option value="">-- Choose role --</option>
                   {% for code,label in role_labels.items %}
-                  <option value="{{ code }}">{{ label }}</option>
+                      {% if code != "1" %} {# Exclude HOD/Admin #}
+                        <option value="{{ code }}">{{ label }}</option>
+                      {% endif %}
                   {% endfor %}
                 </select>
               </div>
               <div class="form-group d-none" data-export-filter="course">
                 <label for="export-course">Filter by Course (optional)</label>
-                <select
-                  class="form-control"
-                  id="export-course"
-                  name="course_id"
-                >
+                <select class="form-control" id="export-course" name="course_id">
                   <option value="">All Courses</option>
                   {% for course in courses %}
                   <option value="{{ course.id }}">{{ course.name }}</option>
@@ -40,19 +36,12 @@
                 </select>
               </div>
               <div class="form-group d-none" data-export-filter="session">
-                <label for="export-session"
-                  >Filter by Session (students only)</label
-                >
-                <select
-                  class="form-control"
-                  id="export-session"
-                  name="session_id"
-                >
+                <label for="export-session">Filter by Session (students only)</label>
+                <select class="form-control" id="export-session" name="session_id">
                   <option value="">All Sessions</option>
                   {% for session in sessions %}
                   <option value="{{ session.id }}">
-                    {{ session.start_year|date:"Y" }} - {{
-                    session.end_year|date:"Y" }}
+                    {{ session.start_year|date:"Y" }} - {{ session.end_year|date:"Y" }}
                   </option>
                   {% endfor %}
                 </select>
@@ -67,48 +56,31 @@
         </div>
       </div>
 
+      <!-- Import CSV -->
       <div class="col-lg-6">
         <div class="card card-warning card-outline">
-          <div
-            class="card-header d-flex justify-content-between align-items-center"
-          >
+          <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title mb-0">Bulk Import from CSV</h3>
             <small class="text-muted">Create accounts in bulk</small>
           </div>
-          <form
-            method="post"
-            action="{% url 'import_users_csv' %}"
-            enctype="multipart/form-data"
-          >
+          <form method="post" action="{% url 'import_users_csv' %}" enctype="multipart/form-data" id="importForm">
             {% csrf_token %}
             <div class="card-body">
               <div class="form-group">
                 <label for="import-role">Import Role</label>
-                <select
-                  class="form-control"
-                  id="import-role"
-                  name="role"
-                  required
-                >
+                <select class="form-control" id="import-role" name="role" required>
                   <option value="">-- Choose role --</option>
                   {% for code,label in role_labels.items %}
-                  <option value="{{ code }}">{{ label }}</option>
+                      {% if code != "1" %} {# Exclude HOD/Admin #}
+                        <option value="{{ code }}">{{ label }}</option>
+                      {% endif %}
                   {% endfor %}
                 </select>
               </div>
               <div class="form-group">
                 <label for="csv-file">CSV File</label>
-                <input
-                  type="file"
-                  class="form-control-file"
-                  id="csv-file"
-                  name="csv_file"
-                  accept=".csv"
-                  required
-                />
-                <small class="form-text text-muted">
-                  UTF-8 encoded CSV. Max ~2MB recommended.
-                </small>
+                <input type="file" class="form-control-file" id="csv-file" name="csv_file" accept=".csv" required/>
+                <small class="form-text text-muted">UTF-8 encoded CSV. Max 2MB only.</small>
               </div>
               <div class="alert alert-secondary mb-0">
                 <strong>Required columns:</strong>
@@ -116,39 +88,17 @@
                   {% for header in required_headers %}
                   <li>{{ header }}</li>
                   {% endfor %}
+                  <li>phone (students & staff)</li>
+                  <li>registration_number (students only)</li>
+                  <li>staff_id_number (staff only)</li>
                 </ul>
                 <p class="mb-0">
-                  <code
-                    >first_name,last_name,email,gender,address,course,session,password</code
-                  >
+                  <code>first_name,last_name,email,gender,address,phone,course,session,registration_number,staff_id_number,password</code>
                 </p>
-                <small
-                  >Gender accepts M/F. Course & Session must already exist.
-                  Password is optional (auto-generated when blank).</small
-                >
-              </div>
-              <div class="alert alert-info mt-3 mb-0">
-                <strong>Need a template?</strong>
-                <ul class="mb-0">
-                  <li>
-                    <a
-                      href="{% static 'sample_data/sample_staff.csv' %}"
-                      download
-                      >Sample staff CSV</a
-                    >
-                  </li>
-                  <li>
-                    <a
-                      href="{% static 'sample_data/sample_students.csv' %}"
-                      download
-                      >Sample student CSV</a
-                    >
-                  </li>
-                </ul>
-                <small
-                  >Update the rows with your actual data, keep the headers the
-                  same, and upload.</small
-                >
+                <small>
+                  Gender accepts M/F. Course & Session must already exist. 
+                  Password is optional (auto-generated when blank). Phone, registration_number (students) and staff_id_number (staff) are required per role.
+                </small>
               </div>
             </div>
             <div class="card-footer text-right">
@@ -159,41 +109,33 @@
           </form>
         </div>
       </div>
+
     </div>
   </div>
 </section>
-{% endblock content %} {% block custom_js %}
+{% endblock content %}
+
+{% block custom_js %}
 <script>
   (function () {
+    // Role-based filters for export
     const roleFilterConfig = {
-      1: { course: false, session: false },
-      2: { course: true, session: false },
-      3: { course: true, session: true },
+      2: { course: true, session: false }, // Staff
+      3: { course: true, session: true },  // Student
     };
 
     function toggleFilterGroups(role, container) {
-      const config = roleFilterConfig[role] || {
-        course: false,
-        session: false,
-      };
-      const courseGroup = container.querySelector(
-        '[data-export-filter="course"]'
-      );
-      const sessionGroup = container.querySelector(
-        '[data-export-filter="session"]'
-      );
+      const config = roleFilterConfig[role] || { course: false, session: false };
+      const courseGroup = container.querySelector('[data-export-filter="course"]');
+      const sessionGroup = container.querySelector('[data-export-filter="session"]');
 
       if (courseGroup) {
         courseGroup.classList.toggle("d-none", !config.course);
-        if (!config.course) {
-          courseGroup.querySelector("select").value = "";
-        }
+        if (!config.course) courseGroup.querySelector("select").value = "";
       }
       if (sessionGroup) {
         sessionGroup.classList.toggle("d-none", !config.session);
-        if (!config.session) {
-          sessionGroup.querySelector("select").value = "";
-        }
+        if (!config.session) sessionGroup.querySelector("select").value = "";
       }
     }
 
@@ -203,6 +145,21 @@
         toggleFilterGroups(this.value, this.closest("form"));
       });
     }
+
+    // Client-side CSV size validation (<2MB)
+    const importForm = document.getElementById("importForm");
+    const csvFileInput = document.getElementById("csv-file");
+
+    importForm.addEventListener("submit", function (e) {
+      if (csvFileInput.files.length > 0) {
+        const fileSize = csvFileInput.files[0].size / 1024 / 1024; // MB
+        if (fileSize > 2) {
+          alert("CSV file size must be less than 2MB.");
+          e.preventDefault();
+          return false;
+        }
+      }
+    });
   })();
 </script>
 {% endblock custom_js %}
