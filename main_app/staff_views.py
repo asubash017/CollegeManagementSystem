@@ -41,13 +41,16 @@ def staff_take_attendance(request):
     staff = get_object_or_404(Staff, admin=request.user)
     subjects = Subject.objects.filter(staff_id=staff)
     sessions = Session.objects.all()
+    from django.utils import timezone
+    holiday_today = Holiday.objects.filter(date=timezone.now().date()).first()
+    
     context = {
+        'page_title': "Take Attendance",
         'subjects': subjects,
         'sessions': sessions,
-        'page_title': 'Take Attendance'
+        'holiday_today': holiday_today,
     }
-
-    return render(request, 'staff_template/staff_take_attendance.html', context)
+    return render(request, "staff_template/staff_take_attendance.html", context)
 
 
 @csrf_exempt
@@ -114,13 +117,16 @@ def staff_update_attendance(request):
     staff = get_object_or_404(Staff, admin=request.user)
     subjects = Subject.objects.filter(staff_id=staff)
     sessions = Session.objects.all()
+    from django.utils import timezone
+    holiday_today = Holiday.objects.filter(date=timezone.now().date()).first()
+
     context = {
+        'page_title': "Update Attendance",
         'subjects': subjects,
         'sessions': sessions,
-        'page_title': 'Update Attendance'
+        'holiday_today': holiday_today,
     }
-
-    return render(request, 'staff_template/staff_update_attendance.html', context)
+    return render(request, "staff_template/staff_update_attendance.html", context)
 
 
 @csrf_exempt

@@ -4,150 +4,178 @@
 {% block content %}
 
 <section class="content">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <!-- general form elements -->
-                <div class="card card-dark">
-                    <div class="card-header">
-                        <h3 class="card-title">{{page_title}}</h3>
-                    </div>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-12">
 
-                    <!-- /.card-header -->
-                    <!-- form start -->
-                    <div class="card-body">
-
-
-
-                        <div class="form-group">
-                            <label>Subject</label>
-                            <select name="subject" class="form-control" id='subject'>
-                                <option value="">----</option>
-                                {% for subject in subjects  %}
-                                <option value="{{subject.id}}">{{subject.name}}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-
-                        <div class="form-group">
-                            <label>Session Year</label>
-                            <select name="session" id='session' class="form-control">
-                                <option value="">----</option>
-                                {% for session in sessions  %}
-                                <option value="{{session.id}}">{{session}} </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        {% comment %}
-
-                        <div>
-                            <label>Attendance Date</label>
-                            <input type="date" class='form-control' name="attendance_date" id='attendance_date' id="">
-                        </div>
-                        {% endcomment %}
-
-                    </div>
-                    <!-- /.card-body -->
-
-                    <div class="card-footer">
-                        <button type="button" id='fetch_student' class="btn btn-success btn-block">Fetch Students</button>
-                        <div class="form-group" id="student_data">
-
-                        </div>
-                    </div>
-                </div>
-                <!-- /.card -->
-
-            </div>
+        <!-- Holiday Banner (auto-detected) -->
+        {% load tz %}
+        {% now "Y-m-d" as today %}
+        {% if holiday_today %}
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+          <h5><i class="fas fa-calendar-day"></i> Today is {{holiday_today.name}} – Holiday</h5>
+          <p>No attendance is required today. Enjoy your break!</p>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
+        {% endif %}
+
+        <!-- Main Card -->
+        <div class="card card-dark shadow-lg animated fadeInDown">
+          <div class="card-header bg-gradient-primary text-white">
+            <h3 class="card-title mb-0">
+              <i class="fas fa-users mr-2"></i>{{page_title}}
+            </h3>
+          </div>
+
+          <div class="card-body">
+            <!-- Subject & Session -->
+            <div class="form-group">
+              <label>Subject</label>
+              <select name="subject" class="form-control" id='subject'>
+                <option value="">----</option>
+                {% for subject in subjects  %}
+                <option value="{{subject.id}}">{{subject.name}}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Session Year</label>
+              <select name="session" id='session' class="form-control">
+                <option value="">----</option>
+                {% for session in sessions  %}
+                <option value="{{session.id}}">{{session}} </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <button type="button" id='fetch_student' class="btn btn-success btn-block pulse">
+              <i class="fas fa-users mr-2"></i>Fetch Students
+            </button>
+            <div class="form-group" id="student_data"></div>
+          </div>
+        </div>
+
+      </div>
     </div>
+  </div>
 </section>
 {% endblock content %}
 
 
 {% block custom_js %}
 <script>
-    $(document).ready(function () {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || document.cookie.match(/csrftoken=([^ ;]+)/)?.[1];
 
-       
+    $(document).ready(function () {
         $("#fetch_student").click(function () {
-            var subject = $("#subject").val()
-            var session = $("#session").val()
-            $("#student_data").html(null)
-if (subject.length  == 0 || session.length == 0){
-    alert("Please select session and subject");
-    return false;
-}
+            let subject = $("#subject").val();
+            let session = $("#session").val();
+            $("#student_data").html(null);
+
+            if (subject.length == 0 || session.length == 0) {
+                Swal.fire({icon: 'warning', title: 'Oops...', text: 'Please select session and subject'});
+                return false;
+            }
+
+            Swal.fire({title: 'Loading students...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+
             $.ajax({
                 url: "{% url 'get_students' %}",
                 type: 'POST',
+                data: {subject: subject, session: session},
+                headers: {'X-CSRFToken': csrftoken}
+            }).done(function (response) {
+                Swal.close();
+                let json_data = JSON.parse(response);
+                if (json_data.length < 1) {
+                    Swal.fire({icon: 'info', title: 'No students', text: 'No students found for selected data'});
+                } else {
+                    let div_data = `
+                      <hr>
+                      <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Select students and choose a date, then save.
+                      </div>
+                      <div class="form-group">
+                        <label>Attendance Date</label>
+                        <input type="date" class="form-control" name="attendance_date" id="attendance_date">
+                      </div>
+                      <div class="row">`;
+
+                    json_data.forEach(stu => {
+                        div_data += `
+                          <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
+                            <div class="custom-control custom-checkbox">
+                              <input type="checkbox" class="custom-control-input" checked name="student_data[]" value="${stu.id}" id="chk${stu.id}">
+                              <label for="chk${stu.id}" class="custom-control-label">${stu.name}</label>
+                            </div>
+                          </div>`;
+                    });
+
+                    div_data += `</div>
+                      <div class="text-center mt-3">
+                        <button id="save_attendance" class="btn btn-success btn-lg pulse" type="button">
+                          <i class="fas fa-save mr-2"></i>Save Attendance
+                        </button>
+                      </div>`;
+                    $("#student_data").html(div_data);
+                }
+            }).fail(function (xhr) {
+                Swal.fire({icon: 'error', title: 'Error', text: xhr.responseText || 'Failed to fetch students'});
+            });
+        });
+
+        // Save attendance
+        $(document).on('click', '#save_attendance', function () {
+            let btn = $(this);
+            btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Saving...');
+
+            let student_data = $("input[name='student_data[]']").map(function () {
+                return {id: $(this).val(), status: $(this).is(":checked") ? 1 : 0};
+            }).get();
+
+            let attendance_date = $('#attendance_date').val();
+            if (!attendance_date) {
+                Swal.fire({icon: 'warning', title: 'Oops...', text: 'Please select an attendance date'});
+                btn.prop("disabled", false).html('<i class="fas fa-save mr-2"></i>Save Attendance');
+                return false;
+            }
+
+            let subject = $("#subject").val();
+            let session = $("#session").val();
+
+            $.ajax({
+                url: "{% url 'save_attendance' %}",
+                type: 'POST',
                 data: {
+                    date: attendance_date,
+                    student_ids: JSON.stringify(student_data),
                     subject: subject,
                     session: session
-                }
+                },
+                headers: {'X-CSRFToken': csrftoken}
             }).done(function (response) {
-                var json_data = JSON.parse(response)
-                if (json_data.length < 1) {
-                    alert("No data to display")
+                if (response === 'OK') {
+                    Swal.fire({icon: 'success', title: 'Saved!', text: 'Attendance saved successfully'}).then(() => location.reload());
                 } else {
-                    var div_data = "<hr/><div class='form-group'></div><div class='form-group'> <label>Attendance Date</label><input type='date' class='form-control' name='attendance_date' id='attendance_date' ><div class='row'>"
-
-                    for (key in json_data) {
-                        div_data += "<div class='col-lg-3'><div class='form-check custom-control custom-checkbox'><input type='checkbox' class='custom-control-input' checked='checked' name='student_data[]' value=" + json_data[key]['id'] + " id='checkbox" + json_data[key]['id'] + "' /> <label for='checkbox" + json_data[key]['id'] + "' class='custom-control-label'>" + json_data[key]['name'] + "</label></div> </div>"
-                    }
-                    div_data += "</div></div>"
-                    div_data += "<div class='form-group'><button id='save_attendance' class='btn btn-success' type='button'>Save Attendance</button></div>"
-                    $("#student_data").html(div_data)
+                    Swal.fire({icon: 'error', title: 'Error', text: response});
+                    btn.prop("disabled", false).html('<i class="fas fa-save mr-2"></i>Save Attendance');
                 }
-            }).fail(function (response) {
-                alert("Error in fetching students")
-            })
-
-
-            $(document).on('click', '#save_attendance', function () {
-                $(this).attr("disabled","disabled")
-                $(this).text("Saving Attendance Data...")
-                var student_data = $("input[name='student_data[]']").map(function () {
-                    if ($(this).is(":checked")){
-                    return {'id':$(this).val(), 'status': 1};
-    
-                    }
-                    return {'id':$(this).val(), 'status': 0};
-    
-                }).get()
-                var attendance_date = $('#attendance_date').val()
-                if (attendance_date.length < 10){
-                    alert("Select date")
-                    return false;
-                }
-                student_data = JSON.stringify(student_data)
-                $.ajax({
-                    url: "{% url 'save_attendance' %}",
-                    type: 'POST',
-                    data: {
-                        date: attendance_date,
-                        student_ids: student_data,
-                        subject: subject,
-                        session: session
-            
-                    }
-                }).done(function (response) {
-                    if (response == 'OK'){
-                        alert("Saved")
-                    }else{
-                        alert(response)
-                    }
-                    location.reload()
-                    
-                }).fail(function (response) {
-                    alert(response.responseText)
-                })
-    
-            })
-
-
-        })
-    })
+            }).fail(function (xhr) {
+                Swal.fire({icon: 'error', title: 'Error', text: xhr.responseText || 'Failed to save attendance'});
+                btn.prop("disabled", false).html('<i class="fas fa-save mr-2"></i>Save Attendance');
+            });
+        });
+    });
+</script>
+<script>
+/* silence missing sparkline error */
+if (typeof $.fn.sparkline === 'undefined') {
+    $.fn.sparkline = function () { return this; };
+}
 </script>
 {% endblock custom_js %}

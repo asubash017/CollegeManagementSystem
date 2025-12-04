@@ -284,6 +284,18 @@ class DashboardNotification(models.Model):
         return "System"
 
 
+class Holiday(models.Model):
+    name = models.CharField(max_length=120)
+    date = models.DateField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.name} ({self.date})"
+
+
 class UserActivityLog(models.Model):
     """Track user activities for audit trail"""
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)

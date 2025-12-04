@@ -141,5 +141,5 @@ urlpatterns = [
     # Notification widget endpoints
     path('api/notifications/html/', notification_views.get_user_notifications_html, name='get_user_notifications_html'),
     path('dashboard/notifications-widget/', notification_views.dashboard_notifications_widget, name='dashboard_notifications_widget'),
-
+    path("holidays/manage/", hod_views.manage_holidays, name='manage_holidays'),
 ]

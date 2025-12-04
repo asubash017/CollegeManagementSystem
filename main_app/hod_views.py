@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import UpdateView
 
+from django.contrib.auth.decorators import login_required
 
 import qrcode
 from io import BytesIO
@@ -1325,3 +1326,22 @@ def delete_session(request, session_id):
         messages.error(
             request, "There are students assigned to this session. Please move them to another session.")
     return redirect(reverse('manage_session'))
+
+
+
+@login_required
+def manage_holidays(request):
+    holidays = Holiday.objects.all().order_by('-date')
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        date = request.POST.get('date')
+        Holiday.objects.create(name=name, date=date)
+        messages.success(request, "Holiday added")
+        return redirect('manage_holidays')
+
+    today = timezone.now().date()
+    return render(request, 'hod_template/manage_holidays.html', {
+        'page_title': 'Manage Holidays',
+        'holidays': holidays,
+        'today': today,
+    })
