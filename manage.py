@@ -15,6 +15,16 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
+
+    # ----  FORCE  MODELS  INTO  REGISTRY  ----
+    from django import setup
+    setup()
+
+    # 1.  force-import the model file (executes every class)
+    import main_app.models               # noqa
+    # 2.  trigger signal registration
+    import main_app.notification_service # noqa
+
     execute_from_command_line(sys.argv)
 
 

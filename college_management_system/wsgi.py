@@ -14,3 +14,7 @@ from django.core.wsgi import get_wsgi_application
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'college_management_system.settings')
 
 application = get_wsgi_application()
+
+# ----  FORCE  MODELS  INTO  REGISTRY  ----
+import main_app.models               # noqa
+import main_app.notification_service # noqa

@@ -236,3 +236,67 @@ class SystemSettings(models.Model):
             # but for simplicity we might just rely on the view to always get the first one.
             pass
         return super(SystemSettings, self).save(*args, **kwargs)
+
+
+
+class DashboardNotification(models.Model):
+    """Track dashboard notifications and unread status for users"""
+    NOTIFICATION_TYPES = (
+        ('leave_student', 'Student Leave Request'),
+        ('leave_staff', 'Staff Leave Request'),
+        ('feedback_student', 'Student Feedback'),
+        ('feedback_staff', 'Staff Feedback'),
+        ('result_update', 'Result Updated'),
+        ('admin_notification', 'Admin Notification'),
+        ('leave_reply', 'Leave Reply'),
+        ('feedback_reply', 'Feedback Reply'),
+    )
+    
+    recipient = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='dashboard_notifications')
+    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sent_notifications', null=True, blank=True)
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    related_id = models.IntegerField(null=True, blank=True)  # ID of related object (leave, feedback, etc.)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['recipient', 'is_read']),
+            models.Index(fields=['notification_type']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_notification_type_display()} - {self.title}"
+    
+    def mark_as_read(self):
+        if not self.is_read:
+            self.is_read = True
+            self.save()
+    
+    @property
+    def sender_name(self):
+        if self.sender:
+            return f"{self.sender.first_name} {self.sender.last_name}"
+        return "System"
+
+
+class UserActivityLog(models.Model):
+    """Track user activities for audit trail"""
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    action = models.CharField(max_length=200)
+    details = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.action}"
+    
+    # main_app/models.py  (LAST line, after UserActivityLog)
+    print("✅  main_app/models.py  was  imported  –  DashboardNotification exists :",
+          'DashboardNotification' in globals())

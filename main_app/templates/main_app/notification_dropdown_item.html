@@ -1,0 +1,15 @@
+{% load tz %}
+<div class="dropdown-item notification-item {% if not notification.is_read %}unread{% endif %}"
+     onclick="markNotificationRead({{ notification.id }})">
+  <div class="d-flex align-items-center">
+    <div class="notification-icon mr-3">
+      {{ notification_icon }}
+    </div>
+    <div class="notification-content">
+      <h6 class="notification-title">{{ notification.title }}</h6>
+      <p class="notification-message">{{ notification.message|truncatechars:100 }}</p>
+      <small class="text-muted">{{ notification.created_at|date:"Y-m-d H:i" }}</small>
+    </div>
+  </div>
+</div>
+<div class="dropdown-divider"></div>

@@ -176,6 +176,17 @@ def staff_apply_leave(request):
                 obj = form.save(commit=False)
                 obj.staff = staff
                 obj.save()
+                            # ===== NOTIFY ALL ADMINS  =====
+                from main_app.notification_service import NotificationService
+                for admin_user in CustomUser.objects.filter(user_type=1):
+                    NotificationService.create_notification(
+                        recipient=admin_user,
+                        notification_type='leave_staff',
+                        title="New Staff Leave Request",
+                        message=f"{staff.admin.get_full_name()} applied for leave on {obj.date}.",
+                        sender=staff.admin,
+                        related_id=obj.id
+                    )
                 messages.success(
                     request, "Application for leave has been submitted for review")
                 return redirect(reverse('staff_apply_leave'))
@@ -200,6 +211,18 @@ def staff_feedback(request):
                 obj = form.save(commit=False)
                 obj.staff = staff
                 obj.save()
+                            # ===== NOTIFY ALL ADMINS  =====
+                from main_app.notification_service import NotificationService
+                for admin_user in CustomUser.objects.filter(user_type=1):
+                    NotificationService.create_notification(
+                        recipient=admin_user,
+                        notification_type='feedback_staff',
+                        title="New Staff Feedback",
+                        message=f"{staff.admin.get_full_name()} submitted feedback.",
+                        sender=staff.admin,
+                        related_id=obj.id
+                    )
+                
                 messages.success(request, "Feedback submitted for review")
                 return redirect(reverse('staff_feedback'))
             except Exception:
@@ -323,6 +346,18 @@ def staff_add_result(request):
             )
             msg = "Scores Saved" if created else "Scores Updated"
             messages.success(request, msg)
+
+            # ===== DASHBOARD NOTIFICATION =====
+            from .notification_service import NotificationService
+            # ===== NOTIFY STAFF ITSELF  =====
+            NotificationService.create_notification(
+                recipient=request.user,
+                notification_type='admin_notification',   # generic type for staff
+                title="Result Saved" if created else "Result Updated",
+                message=f"Result for {student.admin.get_full_name()} in {subject.name} has been saved.",
+                sender=request.user,
+                related_id=result.id
+            )
 
         except Exception as e:
             messages.warning(request, "Error Occured While Processing Form")

@@ -17,7 +17,7 @@ from django.urls import path
 
 from main_app.EditResultView import EditResultView
 
-from . import hod_views, staff_views, student_views, views, chat_views
+from . import hod_views, staff_views, student_views, views, chat_views, notification_views
 
 urlpatterns = [
     path("chat_api/", chat_views.chat_api, name='chat_api'),
@@ -132,5 +132,15 @@ urlpatterns = [
          name="student_view_notification"),
     path('student/result/view/', student_views.student_view_result,
          name='student_view_result'),
+
+    # Notification API endpoints
+    path('api/notifications/', notification_views.get_dashboard_notifications, name='get_dashboard_notifications'),
+    path('api/notifications/<int:notification_id>/read/', notification_views.mark_notification_read, name='mark_notification_read'),
+    path('api/notifications/mark-all-read/', notification_views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('api/notifications/count/', notification_views.get_notification_count, name='get_notification_count'),
+    
+    # Notification widget endpoints
+    path('api/notifications/html/', notification_views.get_user_notifications_html, name='get_user_notifications_html'),
+    path('dashboard/notifications-widget/', notification_views.dashboard_notifications_widget, name='dashboard_notifications_widget'),
 
 ]

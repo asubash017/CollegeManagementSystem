@@ -1,0 +1,277 @@
+<!-- Dashboard Notifications Widget -->
+<div class="card card-info dashboard-notifications-card">
+  <div class="card-header">
+    <h3 class="card-title">
+      <i class="fas fa-bell"></i> Notifications
+      <span class="badge badge-danger navbar-badge notification-badge" id="unread-count">0</span>
+    </h3>
+    <div class="card-tools">
+      <button type="button" class="btn btn-tool" data-card-widget="collapse">
+        <i class="fas fa-minus"></i>
+      </button>
+      <button type="button" class="btn btn-tool" onclick="markAllNotificationsRead()" title="Mark All Read">
+        <i class="fas fa-check-double"></i>
+      </button>
+      <button type="button" class="btn btn-tool" onclick="refreshNotifications()" title="Refresh">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div id="notifications-container" class="notifications-list">
+      <div class="text-center p-4">
+        <i class="fas fa-spinner fa-spin"></i> Loading notifications...
+      </div>
+    </div>
+  </div>
+  <div class="card-footer text-center">
+    <a href="#" onclick="refreshNotifications()" class="text-muted">
+      <i class="fas fa-sync-alt"></i> Refresh Notifications
+    </a>
+  </div>
+</div>
+
+<style>
+.dashboard-notifications-card {
+  margin-bottom: 20px;
+}
+
+.notifications-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 12px 15px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+  background-color: #f8f9fa;
+}
+
+.notification-item.unread {
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196f3;
+}
+
+.notification-item.read {
+  opacity: 0.7;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.notification-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+  margin: 0;
+}
+
+.notification-message {
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 5px;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: #666;
+}
+
+.notification-icon {
+  font-size: 20px;
+  margin-right: 10px;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  padding: 3px 6px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 48px;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+/* Scrollbar styling */
+.notifications-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notifications-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.notifications-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+.notifications-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+</style>
+
+<script>
+// Dashboard notifications JavaScript
+function loadNotifications() {
+  $.ajax({
+    url: '{% url "get_user_notifications_html" %}',
+    type: 'GET',
+    success: function(response) {
+      if (response.success) {
+        $('#notifications-container').html(response.html);
+        updateUnreadCount(response.unread_count);
+      } else {
+        showErrorState();
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error('Error loading notifications:', error);
+      showErrorState();
+    }
+  });
+}
+
+function updateUnreadCount(count) {
+  const badge = $('#unread-count');
+  if (count > 0) {
+    badge.text(count);
+    badge.show();
+  } else {
+    badge.hide();
+  }
+}
+
+function markNotificationRead(notificationId) {
+  $.ajax({
+    url: `/api/notifications/${notificationId}/read/`,
+    type: 'POST',
+    headers: {
+      'X-CSRFToken': getCSRFToken()
+    },
+    success: function(response) {
+      if (response.success) {
+        loadNotifications(); // Refresh the list
+      }
+    },
+    error: function(xhr, status, error) {
+      console.error('Error marking notification as read:', error);
+    }
+  });
+}
+
+function markAllNotificationsRead() {
+  if (confirm('Mark all notifications as read?')) {
+    $.ajax({
+      url: '{% url "mark_all_notifications_read" %}',
+      type: 'POST',
+      headers: {
+        'X-CSRFToken': getCSRFToken()
+      },
+      success: function(response) {
+        if (response.success) {
+          loadNotifications();
+          if (typeof toastr !== 'undefined') {
+            toastr.success(`${response.marked_count} notifications marked as read`);
+          } else {
+            alert(`${response.marked_count} notifications marked as read`);
+          }
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error('Error marking all notifications as read:', error);
+        if (typeof toastr !== 'undefined') {
+          toastr.error('Failed to mark notifications as read');
+        } else {
+          alert('Failed to mark notifications as read');
+        }
+      }
+    });
+  }
+}
+
+function refreshNotifications() {
+  loadNotifications();
+  if (typeof toastr !== 'undefined') {
+    toastr.info('Notifications refreshed');
+  }
+}
+
+function showErrorState() {
+  $('#notifications-container').html(`
+    <div class="empty-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <p>Failed to load notifications</p>
+      <button class="btn btn-sm btn-outline-primary" onclick="loadNotifications()">
+        <i class="fas fa-redo"></i> Retry
+      </button>
+    </div>
+  `);
+}
+
+function getCSRFToken() {
+  return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+         document.cookie.match(/csrftoken=([^ ;]+)/)?.[1] || '';
+}
+
+// Load notifications when page loads
+$(document).ready(function() {
+  loadNotifications();
+  
+  // Refresh notifications every 30 seconds
+  setInterval(loadNotifications, 30000);
+});
+
+
+// Fix summernote error if it exists
+if (typeof $ !== 'undefined') {
+    $(document).ready(function() {
+        // Override summernote if it's not loaded
+        if (!$.fn.summernote) {
+            $.fn.summernote = function() {
+                return this; // Return jQuery object for chaining
+            };
+        }
+    });
+}
+
+// Handle Firebase permission gracefully (optional - won't break notifications)
+if (typeof messaging !== 'undefined') {
+    messaging.onMessage(function (payload) {
+        const notificationOption = {
+            body: payload.notification.body,
+            icon: payload.notification.icon,
+        }
+        if (Notification.permission == 'granted') {
+            var notification = new Notification(payload.notification.title, notificationOption);
+            notification.onclick = function (event) {
+                event.preventDefault();
+                window.open(payload.notification.click_action, "_blank");
+                notification.close();
+            }
+        }
+        console.log(payload);
+    });
+}
+
+</script>

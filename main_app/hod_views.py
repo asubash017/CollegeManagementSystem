@@ -1092,10 +1092,19 @@ def manage_feedback(request):
                 feedback = get_object_or_404(FeedbackStaff, id=feedback_id)
             feedback.reply = reply
             feedback.save()
+            # ===== DASHBOARD NOTIFICATION =====
+            from .notification_service import NotificationService
+            NotificationService.create_notification(
+                recipient=feedback.student.admin if type == 'student' else feedback.staff.admin,
+                notification_type='feedback_reply',
+                title="Feedback Reply",
+                message=f"Admin replied to your feedback: {reply[:50]}...",
+                sender=request.user,
+                related_id=feedback.id
+            )
             return HttpResponse(True)
         except Exception as e:
             return HttpResponse(False)
-
 
 @csrf_exempt
 def manage_leave(request):
@@ -1123,6 +1132,16 @@ def manage_leave(request):
                 leave = get_object_or_404(LeaveReportStaff, id=id)
             leave.status = status
             leave.save()
+            # ===== DASHBOARD NOTIFICATION =====
+            from .notification_service import NotificationService
+            NotificationService.create_notification(
+                recipient=leave.student.admin if type == 'student' else leave.staff.admin,
+                notification_type='leave_reply',
+                title="Leave Request " + ("Approved" if status == 1 else "Rejected"),
+                message=f"Your leave request has been {('approved' if status == 1 else 'rejected')}.",
+                sender=request.user,
+                related_id=leave.id
+            )
             return HttpResponse(True)
         except Exception as e:
             return False
@@ -1224,7 +1243,7 @@ def send_student_notification(request):
     message = request.POST.get('message')
     student = get_object_or_404(Student, admin_id=id)
     try:
-        url = "https://fcm.googleapis.com/fcm/send"
+        url = "https://fcm.googleapis.com/fcm/send "
         body = {
             'notification': {
                 'title': "Student Management System",
@@ -1240,6 +1259,15 @@ def send_student_notification(request):
         data = requests.post(url, data=json.dumps(body), headers=headers)
         notification = NotificationStudent(student=student, message=message)
         notification.save()
+        # ===== DASHBOARD NOTIFICATION =====
+        from .notification_service import NotificationService
+        NotificationService.create_notification(
+            recipient=student.admin,
+            notification_type='admin_notification',
+            title="Admin Notification",
+            message=message,
+            sender=request.user
+        )
         return HttpResponse("True")
     except Exception as e:
         return HttpResponse("False")
@@ -1267,6 +1295,15 @@ def send_staff_notification(request):
         data = requests.post(url, data=json.dumps(body), headers=headers)
         notification = NotificationStaff(staff=staff, message=message)
         notification.save()
+                # ----  DASHBOARD NOTIFICATION  ----
+        from .notification_service import NotificationService
+        NotificationService.create_notification(
+            recipient=staff.admin,
+            notification_type='admin_notification',
+            title="Admin Notification",
+            message=message,
+            sender=request.user
+        )
         return HttpResponse("True")
     except Exception as e:
         return HttpResponse("False")

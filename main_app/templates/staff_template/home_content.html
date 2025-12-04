@@ -4,6 +4,14 @@
 {% block content %}
 <section class="content">
     <div class="container-fluid">
+        
+        <!-- NOTIFICATIONS WIDGET - ADDED HERE -->
+        <div class="row mb-4">
+            <div class="col-12">
+                {% include 'main_app/dashboard_notifications_widget.html' %}
+            </div>
+        </div>
+        
         <!-- Small boxes (Stat box) -->
         <div class="row">
             <div class="col-lg-3 col-6">
@@ -118,6 +126,11 @@
 {% block custom_js %}
   <script>
       $(document).ready(function(){
+        // Add notifications loading
+        if (typeof loadNotifications === 'function') {
+          loadNotifications();
+        }
+        
         var donutData        = {
             labels: ['Attendance', 'Leave'],
             datasets: [
@@ -190,12 +203,12 @@
     
   </script>
       <!-- The core Firebase JS SDK is always required and must be listed first -->
-      <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js "></script>
 
       <!-- TODO: Add SDKs for Firebase products that you want to use
-       https://firebase.google.com/docs/web/setup#available-libraries -->
-      <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-analytics.js"></script>
-      <script src="https://www.gstatic.com/firebasejs/7.22.1/firebase-messaging.js"></script>
+       https://firebase.google.com/docs/web/setup#available-libraries  -->
+      <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-analytics.js "></script>
+      <script src="https://www.gstatic.com/firebasejs/7.22.1/firebase-messaging.js "></script>
   
   
       <script>
@@ -204,7 +217,7 @@
           var firebaseConfig = {
               apiKey: "AIzaSyBarDWWHTfTMSrtc5Lj3Cdw5dEvjAkFwtM",
               authDomain: "sms-with-django.firebaseapp.com",
-              databaseURL: "https://sms-with-django.firebaseio.com",
+              databaseURL: "https://sms-with-django.firebaseio.com ",
               projectId: "sms-with-django",
               storageBucket: "sms-with-django.appspot.com",
               messagingSenderId: "945324593139",

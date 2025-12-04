@@ -4,6 +4,14 @@
 {% block content %}
 <section class="content">
     <div class="container-fluid">
+        
+        <!-- NOTIFICATIONS WIDGET - ADDED HERE -->
+        <div class="row mb-4">
+            <div class="col-12">
+                {% include 'main_app/dashboard_notifications_widget.html' %}
+            </div>
+        </div>
+        
         <!-- Small boxes (Stat box) -->
         <div class="row">
             <div class="col-lg-3 col-6">
@@ -77,6 +85,11 @@
     };
     var barChartCanvas = $('#barChart').get(0).getContext('2d');
     new Chart(barChartCanvas, { type: 'bar', data: barChartData, options: { responsive: true, maintainAspectRatio: false, scales: { xAxes: [{ stacked: true }], yAxes: [{ stacked: true }] } } });
+    
+    // Load notifications on page load
+    if (typeof loadNotifications === 'function') {
+      loadNotifications();
+    }
   });
 </script>
 {% endblock custom_js %}

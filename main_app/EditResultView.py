@@ -52,6 +52,18 @@ class EditResultView(View):
                 result.exam = exam
                 result.test = test
                 result.save()
+
+                # ===== DASHBOARD NOTIFICATION =====
+                from main_app.notification_service import NotificationService
+                # ===== NOTIFY STAFF ITSELF  =====
+                NotificationService.create_notification(
+                    recipient=request.user,
+                    notification_type='admin_notification',
+                    title="Result Updated",
+                    message=f"Result for {student.admin.get_full_name()} in {subject.name} has been updated.",
+                    sender=request.user,
+                    related_id=result.id
+                )
                 messages.success(request, "Result Updated")
                 return redirect(reverse('edit_student_result'))
             except Exception as e:
