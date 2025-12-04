@@ -935,31 +935,6 @@ def edit_student(request, student_id):
         return render(request, "hod_template/edit_student_template.html", context)
 
 
-def manage_settings(request):
-    setting = SystemSettings.objects.first()
-    if not setting:
-        setting = SystemSettings()
-        setting.save()
-        
-    form = SystemSettingsForm(request.POST or None, instance=setting)
-    context = {
-        'form': form,
-        'page_title': 'System Settings'
-    }
-    if request.method == 'POST':
-        if form.is_valid():
-            try:
-                form.save()
-                messages.success(request, "Settings Updated")
-                return redirect(reverse('manage_settings'))
-            except Exception as e:
-                messages.error(request, "Could Not Update " + str(e))
-        else:
-            messages.error(request, "Please fill form properly")
-            
-    return render(request, "hod_template/manage_settings.html", context)
-
-
 
 def edit_course(request, course_id):
     instance = get_object_or_404(Course, id=course_id)

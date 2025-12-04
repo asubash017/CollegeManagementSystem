@@ -40,7 +40,6 @@ urlpatterns = [
     path("add_session/", hod_views.add_session, name='add_session'),
     path("notify/users/", hod_views.admin_notify_users,
          name='admin_notify_users'),
-    path("settings/", hod_views.manage_settings, name='manage_settings'),
     path("admin_notify_student", hod_views.admin_notify_users,
          name='admin_notify_student'),
     path("admin_notify_staff", hod_views.admin_notify_users,

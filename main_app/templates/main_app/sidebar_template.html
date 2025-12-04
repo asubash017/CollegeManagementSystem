@@ -223,16 +223,6 @@
                     </a>
                 </li>
 
-                <li class="nav-item">
-                    {% url 'manage_settings' as manage_settings %}
-                    <a href="{{manage_settings}}"
-                        class="nav-link {% if manage_settings == request.path %} active {% endif %}">
-                        <i class="nav-icon fas fa-cogs"></i>
-                        <p>
-                            Settings
-                        </p>
-                    </a>
-                </li>
 
                 <li class="nav-item">
                     {% url 'admin_view_attendance' as admin_view_attendance %}
