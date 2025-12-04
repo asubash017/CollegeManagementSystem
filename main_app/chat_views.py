@@ -192,7 +192,7 @@ class EnhancedChatService:
                         f"**Email:** {user.email}\n"
                         f"**Registration No:** {reg_display}\n"
                         f"**Phone:** {phone_display}\n"
-                        f"**Gender:** {user.get_gender_display}\n"
+                        f"**Gender:** {user.get_gender_display()}\n"
                         f"**Course:** {student.course.name if student.course else '❌ Not assigned'}\n"
                         f"**Session:** {student.session.start_year.year}-{student.session.end_year.year if student.session else '❌ Not assigned'}\n"
                         f"**Role:** Student"
