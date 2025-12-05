@@ -14,12 +14,18 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import UpdateView
 
+
+
+from django.utils import timezone
+from datetime import datetime
 from django.contrib.auth.decorators import login_required
 
 import qrcode
 from io import BytesIO
 import base64
 
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 from .forms import *
 from .models import *
@@ -1329,14 +1335,41 @@ def delete_session(request, session_id):
 
 
 
+
 @login_required
 def manage_holidays(request):
     holidays = Holiday.objects.all().order_by('-date')
+
     if request.method == 'POST':
         name = request.POST.get('name')
-        date = request.POST.get('date')
-        Holiday.objects.create(name=name, date=date)
-        messages.success(request, "Holiday added")
+        date_str = request.POST.get('date')
+
+        # --- Validation ---
+        if not name or not date_str:
+            messages.error(request, "Name and date are required.")
+            return redirect('manage_holidays')
+
+        try:
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            messages.error(request, "Invalid date format.")
+            return redirect('manage_holidays')
+
+        if date_obj <= timezone.now().date():
+            messages.error(request, "Past dates are not allowed.")
+            return redirect('manage_holidays')
+
+        if Holiday.objects.filter(date=date_obj).exists():
+            messages.error(request, "This date is already a holiday.")
+            return redirect('manage_holidays')
+
+        # --- Create (atomic + single message) ---
+        _hol, created = Holiday.objects.get_or_create(name=name, date=date_obj)
+        if not created:                       # date was already a holiday
+            messages.info(request, f"Holiday '{name}' on {date_obj} already exists.")
+            return redirect('manage_holidays')
+
+        messages.success(request, f"Holiday '{name}' on {date_obj} added.")
         return redirect('manage_holidays')
 
     today = timezone.now().date()
@@ -1345,3 +1378,42 @@ def manage_holidays(request):
         'holidays': holidays,
         'today': today,
     })
+
+
+@login_required
+def delete_holiday(request):
+    """AJAX endpoint to delete a holiday and auto-notify all users."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'})
+
+    import json
+    data = json.loads(request.body)
+    holiday_id = data.get('id')
+    if not holiday_id:
+        return JsonResponse({'success': False, 'error': 'ID required'})
+
+    try:
+        holiday = Holiday.objects.get(id=holiday_id)
+        holiday.delete()  # triggers signal below
+        return JsonResponse({'success': True})
+    except Holiday.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Holiday not found'})
+
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+@receiver(post_save, sender=Holiday)
+def notify_holiday_added(sender, instance, created, **kwargs):
+    """Send one dashboard notification to super-user when a holiday is created."""
+    if not created:                      # ignore edits (there are none)
+        return
+    su = User.objects.filter(is_superuser=True).first()
+    if not su:                           # no admin account → skip
+        return
+    DashboardNotification.objects.create(
+        recipient=su,
+        sender=None,
+        notification_type='admin_notification',
+        title="New Holiday Added",
+        message=f"{instance.name} on {instance.date} has been declared."
+    )

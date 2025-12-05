@@ -43,7 +43,7 @@ def staff_take_attendance(request):
     sessions = Session.objects.all()
     from django.utils import timezone
     holiday_today = Holiday.objects.filter(date=timezone.now().date()).first()
-    
+
     context = {
         'page_title': "Take Attendance",
         'subjects': subjects,
@@ -121,7 +121,7 @@ def staff_update_attendance(request):
     holiday_today = Holiday.objects.filter(date=timezone.now().date()).first()
 
     context = {
-        'page_title': "Update Attendance",
+        'page_title': "View Attendance",
         'subjects': subjects,
         'sessions': sessions,
         'holiday_today': holiday_today,
