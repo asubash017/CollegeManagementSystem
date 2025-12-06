@@ -1,7 +1,7 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.templatetags.static import static
 
@@ -213,6 +213,38 @@ def save_user_profile(sender, instance, **kwargs):
         instance.staff.save()
     if instance.user_type == 3:
         instance.student.save()
+
+
+# ---------- auto-generate ID numbers ----------
+from django.contrib.auth import get_user_model
+
+def make_id(model, prefix, field='id'):
+    """Return next sequential ID with prefix."""
+    last = model.objects.filter(**{f"{field}__isnull": False}).order_by(field).last()
+    if last:
+        raw = getattr(last, field) or ''
+        try:
+            seq = int(raw.split('-')[1]) + 1
+        except Exception:
+            seq = 1
+    else:
+        seq = 1
+    return f"{prefix}-{seq:04d}"
+
+@receiver(pre_save, sender=Admin)
+def set_admin_id(sender, instance, **kwargs):
+    if not instance.admin_id_number:
+        instance.admin_id_number = make_id(Admin, 'ADM', 'admin_id_number')
+
+@receiver(pre_save, sender=Staff)
+def set_staff_id(sender, instance, **kwargs):
+    if not instance.staff_id_number:
+        instance.staff_id_number = make_id(Staff, 'STF', 'staff_id_number')
+
+@receiver(pre_save, sender=Student)
+def set_reg_num(sender, instance, **kwargs):
+    if not instance.registration_number:
+        instance.registration_number = make_id(Student, 'REG', 'registration_number')
 
 
 class SystemSettings(models.Model):

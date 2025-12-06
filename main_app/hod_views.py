@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import UpdateView
 
-
+from .notification_service import NotificationService
 
 from django.utils import timezone
 from datetime import datetime
@@ -603,12 +603,8 @@ def add_staff(request):
             gender = form.cleaned_data.get('gender')
             password = form.cleaned_data.get('password')
             course = form.cleaned_data.get('course')
-            passport = request.FILES.get('profile_pic')
-            passport_url = None
-            if passport:
-                fs = FileSystemStorage()
-                filename = fs.save(passport.name, passport)
-                passport_url = fs.url(filename)
+            passport = request.FILES.get('profile_pic')  # Keep this variable
+            
             try:
                 user_kwargs = dict(
                     email=email,
@@ -617,8 +613,11 @@ def add_staff(request):
                     first_name=first_name,
                     last_name=last_name,
                 )
-                if passport_url:
-                    user_kwargs['profile_pic'] = passport_url
+                
+                # FIXED: Assign file object directly to profile_pic
+                if passport:
+                    user_kwargs['profile_pic'] = passport
+                
                 user = CustomUser.objects.create_user(**user_kwargs)
                 user.gender = gender
                 user.address = address
@@ -730,7 +729,12 @@ def add_subject(request):
 
 
 def manage_staff(request):
-    allStaff = CustomUser.objects.filter(user_type=2)
+    # Only get users who have staff profile
+    allStaff = CustomUser.objects.filter(
+        user_type=2,
+        staff__isnull=False  # ← CRITICAL: Only users with staff profile
+    ).select_related('staff__course').order_by('first_name')
+    
     form = StaffForm(request.POST or None, request.FILES or None)
     context = {
         'allStaff': allStaff,
@@ -747,11 +751,7 @@ def manage_staff(request):
             password = form.cleaned_data.get('password')
             course = form.cleaned_data.get('course')
             passport = request.FILES.get('profile_pic')
-            passport_url = None
-            if passport:
-                fs = FileSystemStorage()
-                filename = fs.save(passport.name, passport)
-                passport_url = fs.url(filename)
+            
             try:
                 user_kwargs = dict(
                     email=email,
@@ -760,8 +760,11 @@ def manage_staff(request):
                     first_name=first_name,
                     last_name=last_name,
                 )
-                if passport_url:
-                    user_kwargs['profile_pic'] = passport_url
+                
+                # FIXED: Assign file object directly
+                if passport:
+                    user_kwargs['profile_pic'] = passport
+                
                 user = CustomUser.objects.create_user(**user_kwargs)
                 user.gender = gender
                 user.address = address
@@ -778,7 +781,12 @@ def manage_staff(request):
 
 
 def manage_student(request):
-    students = CustomUser.objects.filter(user_type=3)
+    # Only get students with complete profiles
+    students = CustomUser.objects.filter(
+        user_type=3,
+        student__isnull=False
+    ).select_related('student__course', 'student__session')
+    
     form = StudentForm(request.POST or None, request.FILES or None)
     context = {
         'students': students,
@@ -796,11 +804,7 @@ def manage_student(request):
             course = form.cleaned_data.get('course')
             session = form.cleaned_data.get('session')
             passport = request.FILES.get('profile_pic')
-            passport_url = None
-            if passport:
-                fs = FileSystemStorage()
-                filename = fs.save(passport.name, passport)
-                passport_url = fs.url(filename)
+            
             try:
                 user_kwargs = dict(
                     email=email,
@@ -809,8 +813,11 @@ def manage_student(request):
                     first_name=first_name,
                     last_name=last_name,
                 )
-                if passport_url:
-                    user_kwargs['profile_pic'] = passport_url
+                
+                # FIXED: Direct file assignment
+                if passport:
+                    user_kwargs['profile_pic'] = passport
+                
                 user = CustomUser.objects.create_user(**user_kwargs)
                 user.gender = gender
                 user.address = address
@@ -846,6 +853,7 @@ def manage_subject(request):
 
 def edit_staff(request, staff_id):
     staff = get_object_or_404(Staff, id=staff_id)
+    user = staff.admin
     form = StaffForm(request.POST or None, instance=staff)
     context = {
         'form': form,
@@ -869,11 +877,11 @@ def edit_staff(request, staff_id):
                 user.email = email
                 if password != None:
                     user.set_password(password)
+                
+                # FIXED: Direct file assignment
                 if passport != None:
-                    fs = FileSystemStorage()
-                    filename = fs.save(passport.name, passport)
-                    passport_url = fs.url(filename)
-                    user.profile_pic = passport_url
+                    user.profile_pic = passport
+                
                 user.first_name = first_name
                 user.last_name = last_name
                 user.gender = gender
@@ -886,10 +894,8 @@ def edit_staff(request, staff_id):
             except Exception as e:
                 messages.error(request, "Could Not Update " + str(e))
         else:
-            messages.error(request, "Please fil form properly")
+            messages.error(request, "Please fill form properly")
     else:
-        user = CustomUser.objects.get(id=staff_id)
-        staff = Staff.objects.get(id=user.id)
         return render(request, "hod_template/edit_staff_template.html", context)
 
 
@@ -915,11 +921,11 @@ def edit_student(request, student_id):
             passport = request.FILES.get('profile_pic') or None
             try:
                 user = CustomUser.objects.get(id=student.admin.id)
+                
+                # FIXED: Direct file assignment
                 if passport != None:
-                    fs = FileSystemStorage()
-                    filename = fs.save(passport.name, passport)
-                    passport_url = fs.url(filename)
-                    user.profile_pic = passport_url
+                    user.profile_pic = passport
+                
                 user.username = username
                 user.email = email
                 if password != None:
@@ -1292,16 +1298,24 @@ def send_staff_notification(request):
 
 
 def delete_staff(request, staff_id):
-    staff = get_object_or_404(CustomUser, staff__id=staff_id)
-    staff.delete()
-    messages.success(request, "Staff deleted successfully!")
+    try:
+        staff = Staff.objects.get(id=staff_id)
+        staff.admin.delete()  # This cascades to delete staff
+        messages.success(request, "Staff deleted successfully!")
+    except Staff.DoesNotExist:
+        messages.error(request, f"Staff with ID {staff_id} does not exist!")
+    except Exception as e:
+        messages.error(request, f"Could not delete staff: {str(e)}")
     return redirect(reverse('manage_staff'))
 
 
 def delete_student(request, student_id):
-    student = get_object_or_404(CustomUser, student__id=student_id)
-    student.delete()
-    messages.success(request, "Student deleted successfully!")
+    try:
+        student = Student.objects.get(id=student_id)
+        student.admin.delete()
+        messages.success(request, "Student deleted successfully!")
+    except Student.DoesNotExist:
+        messages.error(request, f"Student with ID {student_id} does not exist!")
     return redirect(reverse('manage_student'))
 
 
@@ -1363,12 +1377,15 @@ def manage_holidays(request):
             messages.error(request, "This date is already a holiday.")
             return redirect('manage_holidays')
 
-        # --- Create (atomic + single message) ---
-        _hol, created = Holiday.objects.get_or_create(name=name, date=date_obj)
-        if not created:                       # date was already a holiday
+        # --- Create (atomic + idempotent) ---
+        try:
+            Holiday.objects.get(date=date_obj)          # row exists?
             messages.info(request, f"Holiday '{name}' on {date_obj} already exists.")
             return redirect('manage_holidays')
+        except Holiday.DoesNotExist:
+            pass
 
+        Holiday.objects.create(name=name, date=date_obj)
         messages.success(request, f"Holiday '{name}' on {date_obj} added.")
         return redirect('manage_holidays')
 
@@ -1379,6 +1396,19 @@ def manage_holidays(request):
         'today': today,
     })
 
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+# single system-wide notification when holiday is CREATED
+@receiver(post_save, sender=Holiday)
+def holiday_added(sender, instance, created, **kwargs):
+    if not created:
+        return
+    NotificationService.create_system_notification(
+        notification_type='admin_notification',
+        title="New Holiday Added",
+        message=f"{instance.name} on {instance.date} has been declared."
+    )
 
 @login_required
 def delete_holiday(request):
@@ -1399,21 +1429,12 @@ def delete_holiday(request):
     except Holiday.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Holiday not found'})
 
-from django.contrib.auth import get_user_model
-User = get_user_model()
 
-@receiver(post_save, sender=Holiday)
-def notify_holiday_added(sender, instance, created, **kwargs):
-    """Send one dashboard notification to super-user when a holiday is created."""
-    if not created:                      # ignore edits (there are none)
-        return
-    su = User.objects.filter(is_superuser=True).first()
-    if not su:                           # no admin account → skip
-        return
-    DashboardNotification.objects.create(
-        recipient=su,
-        sender=None,
+# ----------  SIGNAL  (rename it anything except delete_holiday) ----------
+@receiver(post_delete, sender=Holiday)
+def holiday_removed(sender, instance, **kwargs):
+    NotificationService.create_system_notification(
         notification_type='admin_notification',
-        title="New Holiday Added",
-        message=f"{instance.name} on {instance.date} has been declared."
+        title="Holiday Removed",
+        message=f"{instance.name} on {instance.date} has been removed."
     )

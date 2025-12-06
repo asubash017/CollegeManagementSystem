@@ -3,6 +3,7 @@ import logging
 from django.apps import apps
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +42,15 @@ class NotificationService:
 
     @staticmethod
     def get_unread_notifications(user):
-        """Return QS with unread notifications for user (newest first)."""
+        """Return QS with unread notifications for user + system (newest first)."""
         try:
             DashboardNotification = get_model("DashboardNotification")
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            system = User.objects.get(email='system@college.edu')
             return DashboardNotification.objects.filter(
-                recipient=user, is_read=False
+                Q(recipient=user) | Q(recipient=system),
+                is_read=False
             ).order_by("-created_at")
         except Exception as exc:  # noqa: BLE001
             logger.exception("get_unread_notifications failed: %s", exc)
@@ -53,11 +58,15 @@ class NotificationService:
 
     @staticmethod
     def get_notification_count(user):
-        """Unread count for user."""
+        """Unread count for user + system."""
         try:
             DashboardNotification = get_model("DashboardNotification")
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            system = User.objects.get(email='system@college.edu')
             return DashboardNotification.objects.filter(
-                recipient=user, is_read=False
+                Q(recipient=user) | Q(recipient=system),
+                is_read=False
             ).count()
         except Exception as exc:  # noqa: BLE001
             logger.exception("get_notification_count failed: %s", exc)
@@ -65,17 +74,34 @@ class NotificationService:
 
     @staticmethod
     def mark_all_as_read(user):
-        """Mark every unread notification for user as read."""
+        """Mark every unread notification for user + system as read."""
         try:
             DashboardNotification = get_model("DashboardNotification")
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            system = User.objects.get(email='system@college.edu')
             return DashboardNotification.objects.filter(
-                recipient=user, is_read=False
+                Q(recipient=user) | Q(recipient=system),
+                is_read=False
             ).update(is_read=True)
         except Exception as exc:  # noqa: BLE001
             logger.exception("mark_all_as_read failed: %s", exc)
             return 0
 
-
+    @staticmethod
+    def create_system_notification(notification_type, title, message, related_id=None):
+        """Create a single notification row attached to sentinel user."""
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        system, _ = User.objects.get_or_create(email='system@college.edu', defaults={'first_name': 'System'})
+        return NotificationService.create_notification(
+            recipient=system,
+            notification_type=notification_type,
+            title=title,
+            message=message,
+            sender=None,
+            related_id=related_id,
+        )
 # ---------- signals (auto-register) ----------
 # We import models lazily inside each receiver so the code works even when
 # this file is loaded before the apps registry is fully ready.
@@ -150,3 +176,5 @@ def notify_result_update(sender, instance, created, **kwargs):
         sender=subject_staff.admin if subject_staff else None,
         related_id=instance.id,
     )
+
+    
