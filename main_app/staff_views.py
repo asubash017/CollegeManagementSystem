@@ -19,14 +19,17 @@ def staff_home(request):
     total_subject = subjects.count()
     attendance_list = Attendance.objects.filter(subject__in=subjects)
     total_attendance = attendance_list.count()
+    
     attendance_list = []
     subject_list = []
     for subject in subjects:
         attendance_count = Attendance.objects.filter(subject=subject).count()
         subject_list.append(subject.name)
         attendance_list.append(attendance_count)
+    
+    # FIXED: Use first name only instead of last name
     context = {
-        'page_title': 'Staff Panel - ' + str(staff.admin.last_name) + ' (' + str(staff.course) + ')',
+        'page_title': f'Staff Dashboard - ({staff.course.name})',
         'total_students': total_students,
         'total_attendance': total_attendance,
         'total_leave': total_leave,

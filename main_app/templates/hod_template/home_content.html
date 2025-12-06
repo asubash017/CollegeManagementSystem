@@ -1,95 +1,262 @@
 {% extends 'main_app/base.html' %}
 {% load static %}
-{% block page_title %}{{page_title}}{% endblock page_title %}
+{% block page_title %}{{page_title|default:"Admin Dashboard"}}{% endblock page_title %}
 {% block content %}
 <section class="content">
     <div class="container-fluid">
-        
-        <!-- NOTIFICATIONS WIDGET - ADDED HERE -->
-        <div class="row mb-4">
-            <div class="col-12">
-                {% include 'main_app/dashboard_notifications_widget.html' %}
-            </div>
-        </div>
-        
-        <!-- Small boxes (Stat box) -->
+        <!-- Stats Row -->
         <div class="row">
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-info">
-                    <div class="inner"><h3>{{total_students}}</h3><p>Total Students</p></div>
-                    <div class="icon"><i class="nav-icon fas fa-user-graduate"></i></div>
-                    <a href="{% url 'manage_student' %}" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                <div class="small-box bg-info shadow-sm">
+                    <div class="inner">
+                        <h3>{{total_students}}</h3>
+                        <p>Total Students</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <a href="{% url 'manage_student' %}" class="small-box-footer">
+                        Manage <i class="fas fa-arrow-circle-right"></i>
+                    </a>
                 </div>
             </div>
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-success">
-                    <div class="inner"><h3>{{total_staff}}</h3><p>Total Staff</p></div>
-                    <div class="icon"><i class="nav-icon fas fa-users"></i></div>
-                    <a href="{% url 'manage_staff' %}" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                <div class="small-box bg-success shadow-sm">
+                    <div class="inner">
+                        <h3>{{total_staff}}</h3>
+                        <p>Total Staff</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <a href="{% url 'manage_staff' %}" class="small-box-footer">
+                        Manage <i class="fas fa-arrow-circle-right"></i>
+                    </a>
                 </div>
             </div>
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-purple">
-                    <div class="inner"><h3>{{total_course}}</h3><p>Total Course</p></div>
-                    <div class="icon"><i class="nav-icon fas fa-th-list"></i></div>
-                    <a href="{% url 'manage_course' %}" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                <div class="small-box bg-purple shadow-sm">
+                    <div class="inner">
+                        <h3>{{total_course}}</h3>
+                        <p>Total Courses</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-th-list"></i>
+                    </div>
+                    <a href="{% url 'manage_course' %}" class="small-box-footer">
+                        Manage <i class="fas fa-arrow-circle-right"></i>
+                    </a>
                 </div>
             </div>
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-danger">
-                    <div class="inner"><h3>{{total_subject}}</h3><p>Total Subjects</p></div>
-                    <div class="icon"><i class="nav-icon fas fa-book"></i></div>
-                    <a href="{% url 'manage_subject' %}" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                <div class="small-box bg-danger shadow-sm">
+                    <div class="inner">
+                        <h3>{{total_subject}}</h3>
+                        <p>Total Subjects</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <a href="{% url 'manage_subject' %}" class="small-box-footer">
+                        Manage <i class="fas fa-arrow-circle-right"></i>
+                    </a>
                 </div>
             </div>
         </div>
         <!-- /.row -->
-
-        <!-- Staff-Students pie + Subject-attendance bar -->
-        <div class="row">
+        
+        <!-- Main Row: Notifications + Charts -->
+        <div class="row mt-4">
+            <!-- LEFT: NOTIFICATIONS -->
             <div class="col-md-6">
-                <div class="card card-dark">
-                    <div class="card-header"><h3 class="card-title">Staffs - Students Overview</h3></div>
-                    <div class="card-body"><canvas id="pieChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas></div>
+                <div class="card card-primary shadow" style="height: 100%;">
+                    <div class="card-header bg-gradient-primary text-white">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-bell mr-2"></i>Recent Notifications
+                            <span class="badge badge-danger badge-pill ml-2" id="unread-count">0</span>
+                        </h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool text-white" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool text-white" onclick="markAllNotificationsRead()" title="Mark All Read">
+                                <i class="fas fa-check-double"></i>
+                            </button>
+                            <button type="button" class="btn btn-tool text-white" onclick="refreshNotifications()" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="notifications-container" class="notifications-list" style="height: 280px; overflow-y: auto;">
+                            <div class="text-center p-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                                <p class="mt-3 text-muted">Loading notifications...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light py-3">
+                        <div class="row text-center">
+                            <div class="col-6 border-right">
+                                <a href="#" onclick="refreshNotifications()" class="text-primary">
+                                    <i class="fas fa-sync-alt mr-1"></i> Refresh
+                                </a>
+                            </div>
+                            <div class="col-6">
+                                <a href="#" onclick="markAllNotificationsRead()" class="text-success">
+                                    <i class="fas fa-check-double mr-1"></i> Mark All Read
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+            
+            <!-- RIGHT: STAFF-STUDENTS PIE -->
             <div class="col-md-6">
-                <div class="card card-dark">
-                    <div class="card-header"><h3 class="card-title">Attendance Per Subject</h3></div>
-                    <div class="card-body"><canvas id="barChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas></div>
+                <div class="card card-secondary shadow" style="height: 100%;">
+                    <div class="card-header bg-gradient-secondary text-white">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-chart-pie mr-2"></i>Staff vs Students
+                        </h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool text-white" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="position: relative; height: 250px;">
+                            <canvas id="populationPieChart"></canvas>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <span class="badge badge-success mr-3">
+                                <i class="fas fa-user-graduate mr-1"></i> Students: {{total_students}}
+                            </span>
+                            <span class="badge badge-info">
+                                <i class="fas fa-users mr-1"></i> Staff: {{total_staff}}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         <!-- /.row -->
-    </div><!-- /.container-fluid -->
+    </div>
 </section>
 {% endblock content %}
 
 {% block custom_js %}
 <script>
-  $(document).ready(function(){
-    // Pie: total students vs staff
-    var donutData = {
-        labels: ['Students', 'Staff'],
-        datasets: [{ data:[{{total_students}}, {{total_staff}}], backgroundColor : ['#00a65a', '#f39c12'] }]
-    };
-    var pieChartCanvas = $('#pieChart').get(0).getContext('2d');
-    new Chart(pieChartCanvas, { type: 'pie', data: donutData, options: { maintainAspectRatio : false, responsive : true } });
-
-    // Bar: attendance per subject
-    var subject_list = {{ subject_list|safe|escape }};
-    var attendance_list = {{ attendance_list }};
-    var barChartData = {
-        labels: subject_list,
-        datasets: [{ label: 'Attendance Per Subject', backgroundColor: '#17A2B8', data: attendance_list }]
-    };
-    var barChartCanvas = $('#barChart').get(0).getContext('2d');
-    new Chart(barChartCanvas, { type: 'bar', data: barChartData, options: { responsive: true, maintainAspectRatio: false, scales: { xAxes: [{ stacked: true }], yAxes: [{ stacked: true }] } } });
+$(document).ready(function(){
+    // Load notifications
+    loadNotifications();
     
-    // Load notifications on page load
-    if (typeof loadNotifications === 'function') {
-      loadNotifications();
+    // Population Pie Chart
+    var pieData = {
+        labels: ['Students', 'Staff'],
+        datasets: [{
+            data: [{{total_students}}, {{total_staff}}],
+            backgroundColor: ['#28a745', '#17a2b8'],
+            borderWidth: 2
+        }]
+    };
+    
+    var pieChart = new Chart($('#populationPieChart'), {
+        type: 'doughnut',
+        data: pieData,
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+    
+    // Auto-refresh notifications
+    setInterval(loadNotifications, 45000);
+});
+
+// ========== NOTIFICATION FUNCTIONS (Same as student) ==========
+function loadNotifications() {
+    $('#notifications-container').html(`
+        <div class="text-center p-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted">Loading...</p>
+        </div>
+    `);
+    
+    $.ajax({
+        url: '{% url "get_user_notifications_html" %}',
+        type: 'GET',
+        success: function(response) {
+            if (response.success) {
+                $('#notifications-container').html(response.html);
+                updateUnreadCount(response.unread_count);
+            } else {
+                showErrorState();
+            }
+        },
+        error: function() {
+            showErrorState();
+        }
+    });
+}
+
+function updateUnreadCount(count) {
+    const badge = $('#unread-count');
+    badge.text(count);
+    count > 0 ? badge.show() : badge.hide();
+}
+
+function markNotificationRead(notificationId) {
+    $.ajax({
+        url: `/api/notifications/${notificationId}/read/`,
+        type: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() },
+        success: function() {
+            loadNotifications();
+        }
+    });
+}
+
+function markAllNotificationsRead() {
+    if (confirm('Mark all notifications as read?')) {
+        $.ajax({
+            url: '{% url "mark_all_notifications_read" %}',
+            type: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            success: function() {
+                loadNotifications();
+            }
+        });
     }
-  });
+}
+
+function refreshNotifications() {
+    loadNotifications();
+}
+
+function showErrorState() {
+    $('#notifications-container').html(`
+        <div class="text-center p-4">
+            <i class="fas fa-exclamation-triangle text-warning fa-2x mb-2"></i>
+            <p class="text-danger">Failed to load notifications</p>
+            <button class="btn btn-sm btn-outline-primary" onclick="loadNotifications()">
+                <i class="fas fa-redo mr-1"></i> Retry
+            </button>
+        </div>
+    `);
+}
+
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+           document.cookie.match(/csrftoken=([^ ;]+)/)?.[1] || '';
+}
 </script>
 {% endblock custom_js %}
