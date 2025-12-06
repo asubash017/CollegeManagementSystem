@@ -1,4 +1,4 @@
-# College Management System
+# Education Institute Management System
 
 A complete web-based system for managing college operations, built with Django. Handles students, staff, courses, attendance, and results through an easy-to-use interface.
 
@@ -7,8 +7,8 @@ A complete web-based system for managing college operations, built with Django. 
 ### Installation
 ```bash
 # 1. Clone the project
-git clone https://github.com/yourusername/college-management-system.git
-cd college-management-system
+git clone https://github.com/yourusername/EIMS.git
+cd EIMS
 
 # 2. Create virtual environment
 python -m venv venv
