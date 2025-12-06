@@ -355,15 +355,16 @@ def staff_add_result(request):
 
             # ===== DASHBOARD NOTIFICATION =====
             from .notification_service import NotificationService
-            # ===== NOTIFY STAFF ITSELF  =====
-            NotificationService.create_notification(
-                recipient=request.user,
-                notification_type='admin_notification',   # generic type for staff
-                title="Result Saved" if created else "Result Updated",
-                message=f"Result for {student.admin.get_full_name()} in {subject.name} has been saved.",
-                sender=request.user,
-                related_id=result.id
-            )
+            admin_users = NotificationService.get_admin_users()
+            for admin in admin_users:
+                NotificationService.create_notification(
+                    recipient=admin,
+                    notification_type="admin_notification",
+                    title="Result Updated by Staff",
+                    message=f"{request.user.first_name} {request.user.last_name} updated result for {student.admin.first_name} {student.admin.last_name} in {subject.name}.",
+                    sender=request.user,
+                    related_id=result.id,
+                )
 
         except Exception as e:
             messages.warning(request, "Error Occured While Processing Form")

@@ -57,12 +57,28 @@ def mark_notification_read(request, notification_id):
     """Mark a notification as read"""
     try:
         DashboardNotification = apps.get_model('main_app', 'DashboardNotification')
-        notification = DashboardNotification.objects.get(
-            id=notification_id, 
-            recipient=request.user
-        )
-        notification.mark_as_read()
-        return JsonResponse({'success': True})
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        # Get the system user
+        try:
+            system_user = User.objects.get(email='system@college.edu')
+        except User.DoesNotExist:
+            system_user = None
+        
+        # Get notification - allow either user's own OR system notifications
+        notification = DashboardNotification.objects.get(id=notification_id)
+        
+        # Check if user is authorized to mark this as read
+        if notification.recipient == request.user or notification.recipient == system_user:
+            notification.mark_as_read()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Not authorized to mark this notification as read'
+            })
+            
     except DashboardNotification.DoesNotExist:
         return JsonResponse({
             'success': False,

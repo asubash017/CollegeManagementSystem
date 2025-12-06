@@ -100,17 +100,7 @@ def student_apply_leave(request):
                 obj = form.save(commit=False)
                 obj.student = student
                 obj.save()
-                # ===== NOTIFY ALL ADMINS  =====
-                from main_app.notification_service import NotificationService
-                for admin_user in CustomUser.objects.filter(user_type=1):
-                    NotificationService.create_notification(
-                        recipient=admin_user,
-                        notification_type='leave_student',
-                        title="New Student Leave Request",
-                        message=f"{student.admin.get_full_name()} applied for leave on {obj.date}.",
-                        sender=student.admin,
-                        related_id=obj.id
-                    )
+                # Signal in notification_service.py will automatically create notifications
                 messages.success(
                     request, "Application for leave has been submitted for review")
                 return redirect(reverse('student_apply_leave'))
@@ -136,17 +126,7 @@ def student_feedback(request):
                 obj = form.save(commit=False)
                 obj.student = student
                 obj.save()
-                # ===== NOTIFY ALL ADMINS  =====
-                from main_app.notification_service import NotificationService
-                for admin_user in CustomUser.objects.filter(user_type=1):
-                    NotificationService.create_notification(
-                        recipient=admin_user,
-                        notification_type='feedback_student',
-                        title="New Student Feedback",
-                        message=f"{student.admin.get_full_name()} submitted feedback.",
-                        sender=student.admin,
-                        related_id=obj.id
-                    )  
+                # Signal in notification_service.py will automatically create notifications
                 messages.success(
                     request, "Feedback submitted for review")
                 return redirect(reverse('student_feedback'))

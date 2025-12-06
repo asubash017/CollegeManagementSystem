@@ -1076,20 +1076,36 @@ def manage_feedback(request):
         try:
             if type == 'student':
                 feedback = get_object_or_404(FeedbackStudent, id=feedback_id)
+                user = feedback.student.admin
             else:
                 feedback = get_object_or_404(FeedbackStaff, id=feedback_id)
+                user = feedback.staff.admin
+                
             feedback.reply = reply
             feedback.save()
+            
             # ===== DASHBOARD NOTIFICATION =====
             from .notification_service import NotificationService
+            
+            # 1. Notify Student/Staff (existing)
             NotificationService.create_notification(
-                recipient=feedback.student.admin if type == 'student' else feedback.staff.admin,
+                recipient=user,
                 notification_type='feedback_reply',
                 title="Feedback Reply",
                 message=f"Admin replied to your feedback: {reply[:50]}...",
                 sender=request.user,
                 related_id=feedback.id
             )
+            
+            # 2. NEW: Notify Admin (success confirmation)
+            NotificationService.create_notification(
+                recipient=request.user,  # The admin who replied
+                notification_type='admin_notification',
+                title="Feedback Reply Sent",
+                message=f"You have replied to {user.first_name}'s feedback.",
+                related_id=feedback.id
+            )
+            
             return HttpResponse(True)
         except Exception as e:
             return HttpResponse(False)
@@ -1116,20 +1132,36 @@ def manage_leave(request):
         try:
             if type == 'student':
                 leave = get_object_or_404(LeaveReportStudent, id=id)
+                user = leave.student.admin
             else:
                 leave = get_object_or_404(LeaveReportStaff, id=id)
+                user = leave.staff.admin
+                
             leave.status = status
             leave.save()
+            
             # ===== DASHBOARD NOTIFICATION =====
             from .notification_service import NotificationService
+            
+            # 1. Notify Student/Staff (existing)
             NotificationService.create_notification(
-                recipient=leave.student.admin if type == 'student' else leave.staff.admin,
+                recipient=user,
                 notification_type='leave_reply',
                 title="Leave Request " + ("Approved" if status == 1 else "Rejected"),
                 message=f"Your leave request has been {('approved' if status == 1 else 'rejected')}.",
                 sender=request.user,
                 related_id=leave.id
             )
+            
+            # 2. NEW: Notify Admin (success confirmation)
+            NotificationService.create_notification(
+                recipient=request.user,  # The admin who approved/rejected
+                notification_type='admin_notification',
+                title="Leave Action Completed",
+                message=f"You have {('approved' if status == 1 else 'rejected')} {user.first_name}'s leave request.",
+                related_id=leave.id
+            )
+            
             return HttpResponse(True)
         except Exception as e:
             return False
@@ -1393,16 +1425,6 @@ def manage_holidays(request):
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
-# single system-wide notification when holiday is CREATED
-@receiver(post_save, sender=Holiday)
-def holiday_added(sender, instance, created, **kwargs):
-    if not created:
-        return
-    NotificationService.create_system_notification(
-        notification_type='admin_notification',
-        title="New Holiday Added",
-        message=f"{instance.name} on {instance.date} has been declared."
-    )
 
 @login_required
 def delete_holiday(request):
@@ -1424,11 +1446,3 @@ def delete_holiday(request):
         return JsonResponse({'success': False, 'error': 'Holiday not found'})
 
 
-# ----------  SIGNAL  (rename it anything except delete_holiday) ----------
-@receiver(post_delete, sender=Holiday)
-def holiday_removed(sender, instance, **kwargs):
-    NotificationService.create_system_notification(
-        notification_type='admin_notification',
-        title="Holiday Removed",
-        message=f"{instance.name} on {instance.date} has been removed."
-    )
