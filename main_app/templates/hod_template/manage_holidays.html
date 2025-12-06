@@ -9,24 +9,12 @@
     <div class="row">
       <div class="col-md-12">
 
-        <!-- Messages (validation errors / success) -->
-        {% if messages %}
-          {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-              {{ message }}
-              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-          {% endfor %}
-        {% endif %}
 
         <!-- Add Holiday Card -->
         <div class="card card-success shadow-lg animated fadeInDown">
-          <button type="submit" class="btn btn-success btn-block pulse"
-                  onclick="this.disabled=true; this.form.submit();">
-            <i class="fas fa-save mr-2"></i>Add Holiday
-          </button>
+          <div class="card-header bg-gradient-success text-white">
+            <h3 class="card-title mb-0"><i class="fas fa-plus-circle mr-2"></i>Add New Holiday</h3>
+          </div>
           <div class="card-body">
             <form method="post">
               {% csrf_token %}
@@ -36,7 +24,7 @@
               </div>
               <div class="form-group">
                 <label>Date</label>
-                <input type="date" name="date" class="form-control" min="{{today}}" required>
+                <input type="date" name="date" class="form-control" min="{{today|date:'Y-m-d'}}" required>
               </div>
               <button type="submit" class="btn btn-success btn-block pulse">
                 <i class="fas fa-save mr-2"></i>Add Holiday
@@ -48,7 +36,7 @@
         <!-- List Holidays + Delete -->
         <div class="card card-dark shadow-lg animated fadeInDown mt-4">
           <div class="card-header bg-gradient-dark text-white">
-            <h3 class="card-title mb-0"><i class="fas fa-list mr-2"></i>Existing Holidays</h3>
+            <h3 class="card-title mb-0"><i class="fas fa-calendar-alt mr-2"></i>Existing Holidays</h3>
           </div>
           <div class="card-body">
             {% if holidays %}
@@ -67,19 +55,21 @@
                   {% for h in holidays %}
                   <tr>
                     <td>{{forloop.counter}}</td>
-                    <td>{{h.name}}</td>
-                    <td>{{h.date}}</td>
+                    <td><strong>{{h.name}}</strong></td>
+                    <td>{{h.date|date:"F j, Y"}}</td>  <!-- Fixed date format -->
                     <td>
                       {% if h.date == today %}
                         <span class="badge badge-warning">Today</span>
+                      {% elif h.date > today %}
+                        <span class="badge badge-success">Future</span>
                       {% else %}
-                        <span class="badge badge-secondary">Future/Past</span>
+                        <span class="badge badge-secondary">Past</span>
                       {% endif %}
                     </td>
                     <td>
                       <button class="btn btn-sm btn-outline-danger pulse"
-                              onclick="confirmDelete('{{h.id}}', '{{h.name}}')">
-                        <i class="fas fa-trash"></i> Delete
+                              onclick="confirmDelete('{{h.id}}', '{{h.name|escapejs}}')">
+                        <i class="fas fa-trash mr-1"></i> Delete
                       </button>
                     </td>
                   </tr>
@@ -88,9 +78,10 @@
               </table>
             </div>
             {% else %}
-            <div class="text-center text-muted">
+            <div class="text-center text-muted py-5">
               <i class="fas fa-calendar-times fa-3x mb-3"></i>
-              <p>No holidays recorded yet.</p>
+              <p class="lead">No holidays recorded yet.</p>
+              <p class="small">Add a holiday using the form above.</p>
             </div>
             {% endif %}
           </div>
@@ -106,64 +97,19 @@
 <script>
 // CSRF token from Django template directly
 const csrftoken = '{{ csrf_token }}';
-</script>
-
-
-function confirmDelete(id, name){
-  Swal.fire({
-    title: 'Delete Holiday?',
-    text: `You won't be able to revert "${name}"!`,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Yes, delete it!'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      fetch("{% url 'delete_holiday' %}", {
-        method: 'POST',
-        headers: {'X-CSRFToken': csrftoken, 'Content-Type': 'application/json'},
-        body: JSON.stringify({id: id})
-      })
-      .then(r => {
-        // log what the server really answered
-        return r.text().then(t => {
-          console.log('Server raw answer:', t);
-          try { return JSON.parse(t); }
-          catch { throw new Error(t || 'Invalid JSON'); }
-        });
-      })
-      .then(d => {
-        if (d.success) {
-          Swal.fire('Deleted!', `${name} has been removed.`, 'success')
-               .then(() => location.reload());
-        } else {
-          throw new Error(d.error || 'Delete failed');
-        }
-      })
-      .catch(err => Swal.fire('Error', err.message, 'error'));
-    }
-  });
-}
-</script>
-
-...
-<!-- Existing HTML content ends here -->
-
-<!-- Place the script right before the block ends -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-const csrftoken = '{{ csrf_token }}';
 
 function confirmDelete(id, name) {
   Swal.fire({
     title: 'Delete Holiday?',
-    text: `You won't be able to revert "${name}"!`,
+    html: `You won't be able to revert <strong>"${name}"</strong>!`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#d33',
     cancelButtonColor: '#3085d6',
-    confirmButtonText: 'Yes, delete it!'
+    confirmButtonText: 'Yes, delete it!',
+    cancelButtonText: 'Cancel',
+    backdrop: true,
+    allowOutsideClick: false
   }).then((result) => {
     if (result.isConfirmed) {
       fetch("{% url 'delete_holiday' %}", {
@@ -177,17 +123,23 @@ function confirmDelete(id, name) {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          Swal.fire('Deleted!', `"${name}" has been removed.`, 'success')
-               .then(() => location.reload());
+          Swal.fire({
+            title: 'Deleted!',
+            html: `Holiday <strong>"${name}"</strong> has been removed.`,
+            icon: 'success',
+            confirmButtonText: 'OK'
+          }).then(() => location.reload());
         } else {
           Swal.fire('Error', data.error || 'Delete failed', 'error');
         }
       })
-      .catch(err => Swal.fire('Error', err.message, 'error'));
+      .catch(err => {
+        console.error('Delete error:', err);
+        Swal.fire('Error', 'Network error or server issue', 'error');
+      });
     }
   });
 }
 </script>
-
 
 {% endblock content %}

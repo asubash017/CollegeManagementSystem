@@ -1207,7 +1207,7 @@ def admin_view_profile(request):
     return render(request, "hod_template/admin_view_profile.html", context)
 
 def admin_notify_users(request):
-    staff = CustomUser.objects.filter(user_type=STAFF_ROLE).select_related('staff__course')
+    staff = CustomUser.objects.filter(user_type=STAFF_ROLE, staff__isnull=False).select_related('staff__course')
     students = CustomUser.objects.filter(user_type=STUDENT_ROLE).select_related('student__course', 'student__session')
     context = {
         'page_title': "Send Notifications",
@@ -1373,18 +1373,12 @@ def manage_holidays(request):
             messages.error(request, "Past dates are not allowed.")
             return redirect('manage_holidays')
 
+        # --- Single duplicate check ---
         if Holiday.objects.filter(date=date_obj).exists():
-            messages.error(request, "This date is already a holiday.")
+            messages.error(request, f"A holiday already exists on {date_obj}.")
             return redirect('manage_holidays')
 
-        # --- Create (atomic + idempotent) ---
-        try:
-            Holiday.objects.get(date=date_obj)          # row exists?
-            messages.info(request, f"Holiday '{name}' on {date_obj} already exists.")
-            return redirect('manage_holidays')
-        except Holiday.DoesNotExist:
-            pass
-
+        # --- Create holiday ---
         Holiday.objects.create(name=name, date=date_obj)
         messages.success(request, f"Holiday '{name}' on {date_obj} added.")
         return redirect('manage_holidays')
